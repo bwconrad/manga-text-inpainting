@@ -153,7 +153,7 @@ def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, train_hi
     train_hist['L1_losses'].append(avg_L1_loss)
 
     # Print epoch stats
-    _, minutes, seconds = calculate_time(start, end)
+    hours, minutes, seconds = calculate_time(start, end)
     print("\nEpoch {} Completed in {}h {}m {:04.2f}s: D loss: {} G loss: {} L1 loss: {}"
               .format(epoch, hours, minutes, seconds, avg_D_loss, avg_G_loss, avg_L1_loss))
 

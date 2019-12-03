@@ -1,6 +1,7 @@
 import torch
 import time
 import os
+import shutil
 
 from utils import *
 from test import *
@@ -77,7 +78,6 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
 
             if (i+1)%args.batch_log_rate == 0:
                 print('[Epoch {}, Batch {}/{}] L1 loss: {:.6f}'.format(epoch, i+1, len(train_loader), np.mean(L1_losses)))
-        
         '''
         Save model
         '''
@@ -105,8 +105,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
         save_loss_plot(train_hist['G_losses'], train_hist['D_losses'], train_hist['L1_losses'], epoch, args.plot_path+'loss/')
         save_metrics_plot(train_hist['PSRN'], train_hist['SSIM'], epoch, args.plot_path+'metrics/')
         
-        
-
+    shutil.make_archive('images', 'zip', 'output/samples/')
 
         
 

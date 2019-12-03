@@ -42,7 +42,7 @@ def test(netG, loader, device, save_batches=0, save_path=None):
         avg_ssim = np.mean(ssim_losses)
         
         # Save images to file
-        if save_images:
+        if save_images_cleaned:
             for i, img in enumerate(save_images_cleaned):
                 imsave(os.path.join(save_path, f'clean_{i}.png'), img) 
             for i, img in enumerate(save_images_dirty):
