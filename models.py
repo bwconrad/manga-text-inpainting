@@ -2,77 +2,12 @@ import torch
 import torch.nn as nn
 import functools
 
-class InputBlock(nn.Module):
-	'''
-	First encoder block
-	'''
-	def __init__(self, in_ch, out_ch, norm_layer, use_bias):
-		super(InputBlock, self).__init__()
-		self.block = nn.Sequential(
-			nn.ReflectionPad2d(3),
-			nn.Conv2d(in_ch, out_ch, kernel_size=7, padding=0, bias=use_bias),
-			norm_layer(out_ch),
-			nn.ReLU(True)
-		)
+class ResnetBlock(nn.Module):
+    def __init__(self, dim, padding_type, norm_layer, activation=nn.ReLU(True), use_dropout=False):
+        super(ResnetBlock, self).__init__()
+        self.block = self.build_block(dim, padding_type, norm_layer, activation, use_dropout)
 
-	def forward(self, x):
-		x = self.block(x)
-		return out
-
-class DownBlock(nn.Module):
-	'''
-	Downsampling block
-	'''
-	def __init__(self, in_ch, out_ch, norm_layer, use_bias):
-		super(DownBlock, self).__init__()
-		self.block = nn.Sequential(
-			nn.Conv2d(in_ch, out_ch, kernel_size=3,
-					  stride=2, padding=1, bias=use_bias),
-			norm_layer(out_ch),
-			nn.ReLU(True)
-		)
-
-	def forward(self, x):
-		x = self.block(x)
-		return x
-
-class UpBlock(nn.Module):
-	'''
-	Upsampling block
-	'''
-	def __init__(self, in_ch, out_ch, norm_layer, use_bias):
-		super(UpBlock, self).__init__()
-		self.block = nn.Sequential(
-			nn.ConvTranspose2d(in_ch, out_ch, kernel_size=3,
-					  		   stride=2, padding=1, output_padding=1, 
-					  		   bias=use_bias),
-			norm_layer(out_ch),
-			nn.ReLU(True)
-		)
-
-	def forward(self, x):
-		x = self.block(x)
-		return x
-
-class OutBlock(nn.Module):
-    def __init__(self, in_ch, out_ch):
-        super(OutBlock, self).__init__()
-        self.block = nn.Sequential(
-            nn.ReflectionPad2d(3),
-            nn.Conv2d(in_ch, out_ch, kernel_size=7, padding=0),
-            nn.Tanh()
-        )
-
-    def forward(self, x):
-        x = self.block(x)
-        return x
-
-class ResBlock(nn.Module):
-    def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias):
-        super(ResBlock, self).__init__()
-        self.block = self.build_block(dim, padding_type, norm_layer, use_dropout, use_bias)
-
-    def build_block(self, dim, padding_type, norm_layer, use_dropout, use_bias):
+    def build_block(self, dim, padding_type, norm_layer, activation, use_dropout):
         block = []
 
         # Choose padding type
@@ -92,9 +27,9 @@ class ResBlock(nn.Module):
         if padding:
             block += [padding(1)]
 
-        block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias),
+        block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p),
                   norm_layer(dim),
-                  nn.ReLU(True)]
+                  activation]
         
         if use_dropout:
             block += [nn.Dropout(0.5)]
@@ -102,55 +37,48 @@ class ResBlock(nn.Module):
         if padding:
             block += [padding(1)]
 
-        block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias),
+        block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p),
                   norm_layer(dim)]
 
         return nn.Sequential(*block)
 
     def forward(self, x):
         out = x + self.block(x)
-        out = nn.ReLU(True)(out)
         return out
 
-class ResNetGenerator(nn.Module):
-    def __init__(self, in_ch, out_ch, ngf=64, norm_layer=nn.BatchNorm2d, 
-                 use_dropout=False, n_blocks=9, padding_type='reflect'):
-        super(Generator, self).__init__()
+class GlobalGenerator(nn.Module):
+    def __init__(self, input_nc, output_nc, ngf=64, n_downsampling=3, n_blocks=9, norm_layer=nn.BatchNorm2d, 
+                 padding_type='reflect'):
+        assert(n_blocks >= 0)
+        super(GlobalGenerator, self).__init__()        
+        activation = nn.ReLU(True)        
 
-        self.in_ch = in_ch
-        self.out_ch = out_ch
-        self.ngf = ngf
+        model = [nn.ReflectionPad2d(3), 
+                 nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0), 
+                 norm_layer(ngf), 
+                 activation]
 
-        if type(norm_layer) == functools.partial:
-            use_bias = norm_layer.func == nn.InstanceNorm2d
-        else:
-            use_bias = norm_layer == nn.InstanceNorm2d
+        ### Downsample
+        for i in range(n_downsampling):
+            mult = 2**i
+            model += [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1),
+                      norm_layer(ngf * mult * 2), activation]
 
-        self.input_block = InputBlock(in_ch, ngf, norm_layer, use_bias)
-        self.down1 = DownBlock(ngf, ngf*2, norm_layer, use_bias)
-        self.down2 = DownBlock(ngf*2, ngf*4, norm_layer, use_bias)
-
-        model = []
+        ### Resblocks
+        mult = 2**n_downsampling
         for i in range(n_blocks):
-            model += [ResBlock(ngf*4, padding_type=padding_type, norm_layer=norm_layer,
-                      use_dropout=use_dropout, use_bias=use_bias)]
-        self.resblocks = nn.Sequential(*model)
-
-        self.up1 = UpBlock(ngf*4, ngf*2, norm_layer, use_bias)
-        self.up2 = UpBlock(ngf*2, ngf, norm_layer, use_bias)
-        self.output_block = OutBlock(ngf. out_ch)
-
-
-    def forward(self, inp):
-        x = self.input_block(inp)
-        x = self.down1(x)
-        x = self.down2(x)
-        x = self.resblocks(x)
-        x = self.up1(x)
-        x = self.up2(x)
-        out = self.output_block(x)
-
-        return out
+            model += [ResnetBlock(ngf * mult, padding_type=padding_type, activation=activation, norm_layer=norm_layer)]
+        
+        ### Upsample        
+        for i in range(n_downsampling):
+            mult = 2**(n_downsampling - i)
+            model += [nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2), kernel_size=3, stride=2, padding=1, output_padding=1),
+                       norm_layer(int(ngf * mult / 2)), activation]
+        model += [nn.ReflectionPad2d(3), nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0), nn.Tanh()]        
+        self.model = nn.Sequential(*model)
+            
+    def forward(self, input):
+        return self.model(input) 
 
 class UNetSkipBlock(nn.Module):
     def __init__(self, outer_ch, inner_ch, input_ch=None,

@@ -10,7 +10,7 @@ def default_loader(path):
     return Image.open(path).convert('L')
 
 class MangaDataset(data.Dataset):
-    def __init__(self, data_root, ann_file, size = 256):
+    def __init__(self, data_root, ann_file, height=256, width=256):
         # Load annotations
         print('Loading Annotations from {}'.format(ann_file))
         train_ann = pd.read_csv(data_root + ann_file)
@@ -26,13 +26,14 @@ class MangaDataset(data.Dataset):
         # Transformation parameters
         self.mean = [0.5]
         self.std = [0.5]
-        self.size = size
+        self.height = height
+        self.width = width
 
         # Transformations
         self.tensor = transforms.ToTensor()
         self.norm = transforms.Normalize(mean=self.mean, std=self.std)
-        self.resize = transforms.Resize(self.size)
-        self.mask_resize = transforms.Resize(self.size, interpolation=0) # Have no antialiasing in resize 
+        self.resize = transforms.Resize((self.height, self.width))
+        self.mask_resize = transforms.Resize((self.height, self.width), interpolation=0) # Have no antialiasing in resize 
 
     def create_mask(self, bboxes, w, h):
         # Create a black image of size (h,w)
@@ -47,32 +48,52 @@ class MangaDataset(data.Dataset):
         
 
     def __getitem__(self, index):
+        # Load the clean and dirty images
         dirty_path = self.root + 'dirty/' + self.imgs[index]
         dirty_img = self.loader(dirty_path)
         clean_path = self.root + 'clean/' + self.imgs[index]
         clean_img = self.loader(clean_path)
 
+        # Create the mask
         bboxes = self.bboxes[index]
         mask = self.create_mask(bboxes, clean_img.size[0], clean_img.size[1]) # Create mask of text locations
 
-        assert(clean_img.size[0]<clean_img.size[1]) # Make sure portrait image
-        diff = clean_img.size[1] - clean_img.size[0]
-        
-        target_img = transforms.functional.pad(clean_img, padding=(int(np.floor(diff/2)), 0, int(np.ceil(diff/2)), 0)) # Add zero padding to make the image a square
-        target_img = self.resize(target_img)
-        target_img = self.tensor(target_img)
-        target_img = self.norm(target_img)
+        assert(clean_img.size[0] < clean_img.size[1]) # Make sure portrait image
 
-        dirty_img = transforms.functional.pad(dirty_img, padding=(int(np.floor(diff/2)), 0, int(np.ceil(diff/2)), 0)) # Add zero padding to make the image a square
+        # Pad to 1:2 ratio
+        if clean_img.size[1] > 2*clean_img.size[0]:
+            # Pad width
+            dw = (clean_img.size[1] - 2*clean_img.size[0]) / 2
+
+            clean_img = transforms.functional.pad(clean_img, padding=(int(np.floor(dw)), 0,
+                                                                      int(np.ceil(dw)), 0))
+            dirty_img = transforms.functional.pad(dirty_img, padding=(int(np.floor(dw)), 0,
+                                                                      int(np.ceil(dw)), 0))
+            mask = transforms.functional.pad(mask, padding=(int(np.floor(dw)), 0,
+                                                            int(np.ceil(dw)), 0))
+        elif clean_img.size[1] < 2*clean_img.size[0]:
+            # Pad height
+            dh = (2*clean_img.size[0] - clean_img.size[1]) / 2
+            clean_img = transforms.functional.pad(clean_img, padding=(0, int(np.floor(dh)), 
+                                                                      0, int(np.ceil(dh))))
+            dirty_img = transforms.functional.pad(dirty_img, padding=(0, int(np.floor(dh)), 
+                                                                      0, int(np.ceil(dh))))
+            mask = transforms.functional.pad(mask, padding=(0, int(np.floor(dh)), 
+                                                            0, int(np.ceil(dh))))
+
+        # Apply transforms
+        clean_img = self.resize(clean_img)
+        clean_img = self.tensor(clean_img)
+        #clean_img = self.norm(clean_img)
+
         dirty_img = self.resize(dirty_img)
         dirty_img = self.tensor(dirty_img)
-        dirty_img = self.norm(dirty_img)
+        #dirty_img = self.norm(dirty_img)
 
-        mask = transforms.functional.pad(mask, padding=(int(np.floor(diff/2)), 0, int(np.ceil(diff/2)), 0)) # Add zero padding to make the image a square
         mask = self.mask_resize(mask)
         mask = self.tensor(mask)
 
-        return dirty_img, target_img, mask
+        return dirty_img, clean_img, mask
 
     def __len__(self):
         return len(self.imgs)

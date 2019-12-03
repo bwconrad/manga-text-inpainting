@@ -90,7 +90,8 @@ def get_args():
 
     # Model arguments
     #parser.add_argument('--model', required=True, help='unet | ')
-    parser.add_argument('--size', type=int, default=256, help='input size')
+    parser.add_argument('--width', type=int, default=512, help='width of input')
+    parser.add_argument('--height', type=int, default=1024, help='height of input') 
     parser.add_argument('--gan_mode', type=str, default='vanilla', help='GAN loss function [vanilla | lsgan]')
     parser.add_argument('--norm', default='batch', help='normalization layer type [batch | instance | none]')
     parser.add_argument('--ngf', type=int, default=64, help='number of units in generator fully connected layers')
