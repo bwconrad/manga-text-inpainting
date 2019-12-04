@@ -158,6 +158,9 @@ def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, train_hi
               .format(epoch, hours, minutes, seconds, avg_D_loss, avg_G_loss, avg_L1_loss))
 
 def save_loss_plot(G_losses, D_losses, L1_losses, epoch, save_path=None):
+    if not os.path.exists(save_path):
+                os.makedirs(save_path)
+
     plt.figure(figsize=(10,5))
     plt.title("Losses - Epoch "+ str(epoch))
     plt.plot(G_losses,label="G")
@@ -173,6 +176,9 @@ def save_loss_plot(G_losses, D_losses, L1_losses, epoch, save_path=None):
     plt.cla()
 
 def save_metrics_plot(psrn, ssim, epoch, save_path=None):
+    if not os.path.exists(save_path):
+                os.makedirs(save_path)
+                
     plt.figure(figsize=(10,5))
     plt.title("Epoch "+ str(epoch))
     plt.plot(psrn,label="PSRN")
