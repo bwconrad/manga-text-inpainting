@@ -41,7 +41,6 @@ def init_weights(net, init_type='normal', init_gain=0.02):
     print('Initializing {} weights as {}'.format(type(net).__name__, init_type.upper()))
     net.apply(init_func)
 
-# Argument parsing helpers
 def get_norm_layer(norm_type='instance'):
     if norm_type == 'batch':
         norm_layer = functools.partial(nn.BatchNorm2d, affine=True, track_running_stats=True)
@@ -87,20 +86,24 @@ def get_args():
     parser.add_argument('--save_samples_path', default='output/samples/', help='path to save samples')
     parser.add_argument('--checkpoint_path', default='output/checkpoints/', help='path to save checkpoints')
     parser.add_argument('--plot_path', default='output/plots/', help='path to save loss plots')
-        
+    parser.add_argument('--resume', default=None, help='checkpoint to resume training from')
 
     # Model arguments
-    #parser.add_argument('--model', required=True, help='unet | ')
+    #parser.add_argument('--generator', required=True, help='unet | ')
+    #parser.add_argument('--discriminator', required=True, help='unet | ')
     parser.add_argument('--width', type=int, default=512, help='width of input')
     parser.add_argument('--height', type=int, default=1024, help='height of input') 
-    parser.add_argument('--gan_mode', type=str, default='vanilla', help='GAN loss function [vanilla | lsgan]')
+    parser.add_argument('--gan_loss', type=str, default='vanilla', help='GAN loss function [vanilla | lsgan]')
     parser.add_argument('--norm', default='batch', help='normalization layer type [batch | instance | none]')
     parser.add_argument('--ngf', type=int, default=64, help='number of units in generator fully connected layers')
     parser.add_argument('--ndf', type=int, default=64, help='number of units in discriminator fully connected layers')
     parser.add_argument('--init_type', type=str, default='normal', help='network initialization [normal | xavier | kaiming | orthogonal]')
     parser.add_argument('--init_gain', type=float, default=0.02, help='scaling factor for normal, xavier and orthogonal.')
     parser.add_argument('--dropout', type=bool, default=True, help='use dropout')
-    parser.add_argument('--n_layers_D', type=int, default=3)
+    parser.add_argument('--spectral_norm', type=bool, default=False, help='use spectral normalization')
+    parser.add_argument('--dilation', type=int, default=1, help='amount of dilation')
+    parser.add_argument('--n_downsamples', type=int, default=3, help='# of downsamples in encoder')
+    parser.add_argument('--n_blocks', type=int, default=9, help='# of resblocks')
 
     # Optimization arguments
     parser.add_argument('--epochs', type=int, default=1, help='number of training epochs')
@@ -116,7 +119,7 @@ def get_args():
     parser.add_argument('--scheduler', default='none', help='learning rate schedule [linear | step | cosine | none]')
     parser.add_argument('--start_lr_epochs', type=int, default=100, help='# of epochs at starting learning rate')
     parser.add_argument('--decay_lr_epochs', type=int, default=100, help='# of epochs to linearly decay learning rate to zero')
-    parser.add_argument('--step_lr_epochs', type=int, default=50, help='multiply by a gamma every step_lr_epochs epochs')
+    parser.add_argument('--step_lr_epochs', type=int, default=50, help='# of epochs between steps')
     parser.add_argument('--gamma', type=int, default=0.1, help='lr decay for step scheduling')
     
     # Logging arguments
@@ -127,7 +130,6 @@ def get_args():
 
     return parser.parse_args()
 
-
 def calculate_time(start, end):
     '''
         Calculate and return the hours, minutes and seconds between start and end times
@@ -136,11 +138,8 @@ def calculate_time(start, end):
     minutes, seconds = divmod(remainder, 60)
     return int(hours), int(minutes), seconds
 
-def save_checkpoint(state, is_best, filename='./models/checkpoints/checkpoint.pth.tar'):
-    torch.save(state, filename)
-    if is_best:
-        print("Saving new best model")
-        shutil.copyfile(filename, './models/checkpoints/model_best.pth.tar')
+def save_checkpoint(state, epoch, path):
+    torch.save(state, path+'checkpoint_epoch{}.pth.tar'.format(epoch))
 
 def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, train_hist):
     # Save the average loss during the epoch

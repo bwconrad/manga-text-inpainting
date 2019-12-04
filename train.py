@@ -14,14 +14,24 @@ def set_requires_grad(nets, requires_grad=False):
                 for param in net.parameters():
                     param.requires_grad = requires_grad
 
+def update_learning_rate(schedulers, type):
+        '''
+            Update learning rates for all the networks, called at the end of every epoch
+        '''
+        for scheduler in schedulers:
+            if type == 'plateau':
+                scheduler.step(0)
+            else:
+                scheduler.step()
+
 def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-              schedulerG, schedulerD, criterionGAN, criterionL1, device, args):
+              schedulerG, schedulerD, criterionGAN, criterionL1, start_epoch, device, args):
     
     train_hist = {'D_losses': [], 'G_losses': [], 'L1_losses': [], 'PSRN': [], 'SSIM': []}
     start = time.time()
     
     print('\nStarting to train...')
-    for epoch in range(1, args.epochs+1):
+    for epoch in range(start_epoch, args.epochs+1):
         netG.train()
         netD.train()
         start_epoch = time.time()
@@ -41,13 +51,13 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             set_requires_grad(netD, True) # enable backprop for D
             optimizerD.zero_grad()
 
-            # Real
+            # Real loss
             validity_real = netD(torch.cat((real_inputs, masks), 1))
             d_real_loss = criterionGAN(validity_real, target_is_real=True)
 
-            # Fake
+            # Fake loss
             validity_fake = netD(torch.cat((fake_targets.detach(), masks), 1))
-            d_fake_loss = criterionGAN(validity_real, target_is_real=False)
+            d_fake_loss = criterionGAN(validity_fake, target_is_real=False)
 
             # Combined loss
             d_loss = (d_real_loss + d_fake_loss) / 2
@@ -62,7 +72,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
 
             # GAN loss
             validity_fake = netD(torch.cat((fake_targets, masks), 1))  
-            g_loss_gan = criterionGAN(validity_fake, True)                    
+            g_loss_gan = criterionGAN(validity_fake, target_is_real=True)                    
             
             # L1 loss
             g_loss_l1 = criterionL1(fake_targets, real_targets) 
@@ -79,33 +89,42 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
 
             if (i+1)%args.batch_log_rate == 0:
                 print('[Epoch {}, Batch {}/{}] L1 loss: {:.6f}'.format(epoch, i+1, len(train_loader), np.mean(L1_losses)))
-        '''
-        Save model
-        '''
 
+        # Save model
+        save_checkpoint({'epoch': epoch,
+                         'G_state_dict': netG.state_dict(),
+                         'D_state_dict': netD.state_dict(),
+                         'optimizerG_state_dict' : optimizerG.state_dict(),
+                         'optimizerD_state_dict' : optimizerD.state_dict(),
+                         'schedulerG_state_dict' : schedulerG.state_dict() if schedulerG else None,
+                         'schedulerD_state_dict' : schedulerD.state_dict() if schedulerD else None,  
+                         'args': args
+                        }, epoch, args.checkpoint_path)
+
+        # Print epoch information
         print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, L1_losses, train_hist)
         
         # Evaluate on validation set
         print('Evaluating on validation set...')
-        
         if epoch%args.save_samples_rate == 0:
             save_path = args.save_samples_path+'epoch{}/'.format(epoch)
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
-
             avg_psrn, avg_ssim = test(netG, val_loader, device, save_batches=args.save_samples_batches, save_path=save_path)
-        
         else:
             avg_psrn, avg_ssim = test(netG, val_loader, device)
-        
         train_hist['PSRN'].append(avg_psrn)
         train_hist['SSIM'].append(avg_ssim)
         print("PSRN: {} SSIM: {}\n".format(avg_psrn, avg_ssim))
-
+    
         # Save training history plot
         save_loss_plot(train_hist['G_losses'], train_hist['D_losses'], train_hist['L1_losses'], epoch, args.plot_path+'loss/')
         save_metrics_plot(train_hist['PSRN'], train_hist['SSIM'], epoch, args.plot_path+'metrics/')
         
+        # Update lr schedulers
+        if schedulerG:
+            update_learning_rate([schedulerG, schedulerD], args.scheduler)
+
     shutil.make_archive('images', 'zip', 'output/samples/')
 
         

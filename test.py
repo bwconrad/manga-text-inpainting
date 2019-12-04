@@ -17,7 +17,7 @@ def test(netG, loader, device, save_batches=0, save_path=None):
         save_images_cleaned = []
         save_images_dirty = []
             
-    
+        # Measure psrn and ssim on entire val set
         for i, (real_inputs, real_targets, masks) in enumerate(loader):
             real_inputs, real_targets, masks = real_inputs.to(device), real_targets.to(device), masks.to(device)
             
@@ -48,5 +48,4 @@ def test(netG, loader, device, save_batches=0, save_path=None):
             for i, img in enumerate(save_images_dirty):
                 imsave(os.path.join(save_path, f'dirty_{i}.png'), img) 
 
-
-        return avg_psrn, avg_ssim
+    return avg_psrn, avg_ssim

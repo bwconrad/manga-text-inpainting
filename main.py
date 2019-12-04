@@ -26,10 +26,10 @@ val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
 
 # Setup models
-print('\nSetting up models...')
+print('\nInitializing models...')
 norm_layer = get_norm_layer(args.norm)
-
-netG = GlobalGenerator(input_nc=2, output_nc=1, n_downsampling=3, n_blocks=9, ngf=args.ngf, norm_layer=norm_layer)
+netG = GlobalGenerator(input_nc=2, output_nc=1, n_downsampling=args.n_downsamples, n_blocks=args.n_blocks, ngf=args.ngf, norm_layer=norm_layer,
+                           use_dropout=args.dropout, use_spectral_norm=args.spectral_norm, dilation=args.dilation)
 netG.to(device)
 init_weights(netG, args.init_type, init_gain=args.init_gain)
 
@@ -44,16 +44,41 @@ optimizerD = optim.Adam(netD.parameters(), lr=args.lrD, betas=(args.beta1, args.
 
 schedulerG = get_scheduler(optimizerG, args)
 schedulerD = get_scheduler(optimizerD, args)
-print('Using a {} learning rate schedule'.format(type(schedulerG).__name__))
 
+if schedulerG:
+    print('Using a {} learning rate schedule'.format(type(schedulerG).__name__))
+else:
+    print('Using no learning rate scheduler')
+    
+start_epoch = 1
+
+# Resume from checkpoint
+if args.resume:
+    print('\nLoading models from checkpoint {}'.format(args.resume))
+    checkpoint = torch.load(args.resume)
+    start_epoch = checkpoint['epoch']+1
+    resume_args = checkpoint['args']
+
+    netG.load_state_dict(checkpoint['G_state_dict'])
+    netD.load_state_dict(checkpoint['D_state_dict'])
+
+    optimizerG.load_state_dict(checkpoint['optimizerG_state_dict'])
+    optimizerD.load_state_dict(checkpoint['optimizerD_state_dict'])
+
+    if checkpoint['schedulerG_state_dict']:
+        schedulerG.load_state_dict(checkpoint['schedulerG_state_dict'])
+        schedulerD.load_state_dict(checkpoint['schedulerD_state_dict'])
+
+    print("Loaded checkpoint '{}' (epoch {})"
+            .format(args.resume, checkpoint['epoch']))
 
 # Define loss functions
-criterionGAN = GANLoss(args.gan_mode).to(device)
+criterionGAN = GANLoss(args.gan_loss).to(device)
 criterionL1 = torch.nn.L1Loss()
 
 # Train model
 train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-          schedulerG, schedulerD, criterionGAN, criterionL1, device, args)
+          schedulerG, schedulerD, criterionGAN, criterionL1, start_epoch, device, args)
 
 
 

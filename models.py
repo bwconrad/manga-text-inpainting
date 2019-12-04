@@ -2,12 +2,18 @@ import torch
 import torch.nn as nn
 import functools
 
-class ResnetBlock(nn.Module):
-    def __init__(self, dim, padding_type, norm_layer, activation=nn.ReLU(True), use_dropout=False):
-        super(ResnetBlock, self).__init__()
-        self.block = self.build_block(dim, padding_type, norm_layer, activation, use_dropout)
+def spectral_norm(module, use=True):
+    if use:
+        return nn.utils.spectral_norm(module)
 
-    def build_block(self, dim, padding_type, norm_layer, activation, use_dropout):
+    return module
+
+class ResnetBlock(nn.Module):
+    def __init__(self, dim, padding_type, norm_layer, activation=nn.ReLU(True), use_dropout=False, use_spectral_norm=False, dilation=1):
+        super(ResnetBlock, self).__init__()
+        self.block = self.build_block(dim, padding_type, norm_layer, activation, use_dropout, use_spectral_norm, dilation)
+
+    def build_block(self, dim, padding_type, norm_layer, activation, use_dropout, use_spectral_norm, dilation):
         block = []
 
         # Choose padding type
@@ -27,7 +33,7 @@ class ResnetBlock(nn.Module):
         if padding:
             block += [padding(1)]
 
-        block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p),
+        block += [spectral_norm(nn.Conv2d(dim, dim, kernel_size=3, padding=p, dilation=dilation, bias=not use_spectral_norm), use_spectral_norm),
                   norm_layer(dim),
                   activation]
         
@@ -37,7 +43,7 @@ class ResnetBlock(nn.Module):
         if padding:
             block += [padding(1)]
 
-        block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p),
+        block += [spectral_norm(nn.Conv2d(dim, dim, kernel_size=3, padding=p, dilation=dilation, bias=not use_spectral_norm), use_spectral_norm),
                   norm_layer(dim)]
 
         return nn.Sequential(*block)
@@ -48,7 +54,7 @@ class ResnetBlock(nn.Module):
 
 class GlobalGenerator(nn.Module):
     def __init__(self, input_nc, output_nc, ngf=64, n_downsampling=3, n_blocks=9, norm_layer=nn.BatchNorm2d, 
-                 padding_type='reflect'):
+                 padding_type='reflect', use_dropout=False, use_spectral_norm=False, dilation=1):
         assert(n_blocks >= 0)
         super(GlobalGenerator, self).__init__()        
         activation = nn.ReLU(True)        
@@ -58,23 +64,30 @@ class GlobalGenerator(nn.Module):
                  norm_layer(ngf), 
                  activation]
 
-        ### Downsample
+        # Encoder
         for i in range(n_downsampling):
             mult = 2**i
             model += [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1),
-                      norm_layer(ngf * mult * 2), activation]
+                      norm_layer(ngf * mult * 2), 
+                      activation]
 
-        ### Resblocks
+        # Resblocks
         mult = 2**n_downsampling
         for i in range(n_blocks):
-            model += [ResnetBlock(ngf * mult, padding_type=padding_type, activation=activation, norm_layer=norm_layer)]
+            model += [ResnetBlock(ngf * mult, padding_type=padding_type, activation=activation, norm_layer=norm_layer,
+                                  use_dropout=use_dropout, use_spectral_norm = use_spectral_norm, dilation=dilation)]
         
-        ### Upsample        
+        # Decoder        
         for i in range(n_downsampling):
             mult = 2**(n_downsampling - i)
             model += [nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2), kernel_size=3, stride=2, padding=1, output_padding=1),
-                       norm_layer(int(ngf * mult / 2)), activation]
-        model += [nn.ReflectionPad2d(3), nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0), nn.Tanh()]        
+                       norm_layer(int(ngf * mult / 2)), 
+                       activation]
+
+        model += [nn.ReflectionPad2d(3), 
+                  nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0), 
+                  nn.Tanh()] 
+
         self.model = nn.Sequential(*model)
             
     def forward(self, input):
