@@ -126,6 +126,8 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             update_learning_rate([schedulerG, schedulerD], args.scheduler)
 
     shutil.make_archive('images', 'zip', 'output/samples/')
+    shutil.make_archive('checkpoints', 'zip', 'output/checkpoints/')
+
 
         
 

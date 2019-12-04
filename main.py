@@ -69,8 +69,7 @@ if args.resume:
         schedulerG.load_state_dict(checkpoint['schedulerG_state_dict'])
         schedulerD.load_state_dict(checkpoint['schedulerD_state_dict'])
 
-    print("Loaded checkpoint '{}' (epoch {})"
-            .format(args.resume, checkpoint['epoch']))
+    print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
 # Define loss functions
 criterionGAN = GANLoss(args.gan_loss).to(device)
