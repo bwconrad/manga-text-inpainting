@@ -10,7 +10,7 @@ def default_loader(path):
     return Image.open(path).convert('L')
 
 class MangaDataset(data.Dataset):
-    def __init__(self, data_root, ann_file, height=256, width=256):
+    def __init__(self, data_root, ann_file, height=1024, width=512):
         # Load annotations
         print('Loading Annotations from {}'.format(ann_file))
         train_ann = pd.read_csv(data_root + ann_file)

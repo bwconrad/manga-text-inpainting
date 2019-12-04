@@ -16,13 +16,14 @@ def set_requires_grad(nets, requires_grad=False):
 
 def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
               schedulerG, schedulerD, criterionGAN, criterionL1, device, args):
-    netG.train()
-    netD.train()
+    
     train_hist = {'D_losses': [], 'G_losses': [], 'L1_losses': [], 'PSRN': [], 'SSIM': []}
     start = time.time()
     
     print('\nStarting to train...')
     for epoch in range(1, args.epochs+1):
+        netG.train()
+        netD.train()
         start_epoch = time.time()
 
         # Batch losses of the current epoch
@@ -78,7 +79,6 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
 
             if (i+1)%args.batch_log_rate == 0:
                 print('[Epoch {}, Batch {}/{}] L1 loss: {:.6f}'.format(epoch, i+1, len(train_loader), np.mean(L1_losses)))
-            
         '''
         Save model
         '''
@@ -100,7 +100,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
         
         train_hist['PSRN'].append(avg_psrn)
         train_hist['SSIM'].append(avg_ssim)
-        print("PSRN: {} SSIM: {}".format(avg_psrn, avg_ssim))
+        print("PSRN: {} SSIM: {}\n".format(avg_psrn, avg_ssim))
 
         # Save training history plot
         save_loss_plot(train_hist['G_losses'], train_hist['D_losses'], train_hist['L1_losses'], epoch, args.plot_path+'loss/')
