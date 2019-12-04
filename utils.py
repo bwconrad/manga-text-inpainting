@@ -7,6 +7,7 @@ import functools
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 from norm import *
 
@@ -178,7 +179,7 @@ def save_loss_plot(G_losses, D_losses, L1_losses, epoch, save_path=None):
 def save_metrics_plot(psrn, ssim, epoch, save_path=None):
     if not os.path.exists(save_path):
                 os.makedirs(save_path)
-                
+
     plt.figure(figsize=(10,5))
     plt.title("Epoch "+ str(epoch))
     plt.plot(psrn,label="PSRN")
