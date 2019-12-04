@@ -84,11 +84,11 @@ class MangaDataset(data.Dataset):
         # Apply transforms
         clean_img = self.resize(clean_img)
         clean_img = self.tensor(clean_img)
-        #clean_img = self.norm(clean_img)
+        clean_img = self.norm(clean_img)
 
         dirty_img = self.resize(dirty_img)
         dirty_img = self.tensor(dirty_img)
-        #dirty_img = self.norm(dirty_img)
+        dirty_img = self.norm(dirty_img)
 
         mask = self.mask_resize(mask)
         mask = self.tensor(mask)

@@ -107,7 +107,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
         save_loss_plot(train_hist['G_losses'], train_hist['D_losses'], train_hist['L1_losses'], epoch, args.plot_path+'loss/')
         save_metrics_plot(train_hist['PSRN'], train_hist['SSIM'], epoch, args.plot_path+'metrics/')
         
-    shutil.make_archive('images', 'zip', 'manga-text-inpainting/output/samples/')
+    shutil.make_archive('images', 'zip', 'output/samples/')
 
         
 

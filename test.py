@@ -36,8 +36,9 @@ def test(netG, loader, device, save_batches=0, save_path=None):
             if i < save_batches:
                 for j in range(fake_targets.size(0)):
                     save_images_cleaned.append(((fake_targets[j].cpu().data.numpy().transpose(1, 2, 0)+1)*127.5).astype('uint8')) # Cleaned img
-                    save_images_dirty.append(((real_targets[j].cpu().data.numpy().transpose(1, 2, 0)+1)*127.5).astype('uint8'))  # Corresponding dirty img
-
+                    save_images_dirty.append(((real_inputs[j].cpu().data.numpy().transpose(1, 2, 0)+1)*127.5).astype('uint8'))  # Corresponding dirty img
+                       
+            break
         avg_psrn = np.mean(psrn_losses)
         avg_ssim = np.mean(ssim_losses)
         
