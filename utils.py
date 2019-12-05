@@ -159,21 +159,6 @@ def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, train_hi
     print("\nEpoch {} Completed in {}h {}m {:04.2f}s: D loss: {} G loss: {} L1 loss: {}"
               .format(epoch, hours, minutes, seconds, avg_D_loss, avg_G_loss, avg_L1_loss))
 
-def save_loss_plot(G_losses, D_losses, L1_losses, epoch, save_path=None):
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-
-    plt.figure(figsize=(10,5))
-    plt.title("Losses - Epoch "+ str(epoch))
-    plt.plot(G_losses,label="G")
-    plt.plot(D_losses,label="D")
-    plt.plot(L1_losses, label='L1')
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.legend()
-    plt.savefig(save_path+'epoch{}_lossplot.png'.format(epoch))
-    plt.cla()
-
 def save_plots(train_hist, save_path):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -220,19 +205,3 @@ def save_plots(train_hist, save_path):
     plt.cla()
 
 
-def save_metrics_plot(psrn, ssim, epoch, save_path=None):
-    if not os.path.exists(save_path):
-                os.makedirs(save_path)
-
-    plt.figure(figsize=(10,5))
-    plt.title("Epoch "+ str(epoch))
-    plt.plot(psrn,label="PSRN")
-    plt.plot(ssim,label="SSIM")
-    plt.xlabel("Epoch")
-    plt.ylabel("Value")
-    plt.legend()
-    
-    if save_path:
-        plt.savefig(save_path+'epoch{}_metricsplot.png'.format(epoch))
-
-    plt.cla()
