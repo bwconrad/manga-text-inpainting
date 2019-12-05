@@ -174,7 +174,7 @@ class UNetGenerator(nn.Module):
         return self.model(inp)    
                                
 class PatchDiscriminator(nn.Module):
-    def __init__(self, input_ch, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d):
+    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d):
         super(PatchDiscriminator, self).__init__()
 
         # No bias since BatchNorm2d has affine parameters
@@ -183,7 +183,7 @@ class PatchDiscriminator(nn.Module):
         else:
             use_bias = norm_layer == nn.InstanceNorm2d
 
-        model = [nn.Conv2d(input_ch, ndf, kernel_size=4, stride=2, padding=1),
+        model = [nn.Conv2d(input_nc, ndf, kernel_size=4, stride=2, padding=1),
                  nn.LeakyReLU(0.2, True)]
 
         nf_mult = 1
@@ -211,7 +211,7 @@ class PixelDiscriminator(nn.Module):
     '''
     1x1 PatchGAN discriminator
     '''
-    def __init__(self, input_ch, ndf=64, norm_layer=nn.BatchNorm2d):
+    def __init__(self, input_nc, ndf=64, norm_layer=nn.BatchNorm2d):
         super(PixelDiscriminator, self).__init__()
 
         # No bias since BatchNorm2d has affine parameters
@@ -220,7 +220,7 @@ class PixelDiscriminator(nn.Module):
         else:
             use_bias = norm_layer == nn.InstanceNorm2d
 
-        model = [nn.Conv2d(input_ch, ndf, kernel_size=1, stride=1, padding=0),
+        model = [nn.Conv2d(input_nc, ndf, kernel_size=1, stride=1, padding=0),
                  nn.LeakyReLU(0.2, True),
                  nn.Conv2d(ndf, ndf * 2, kernel_size=1, stride=1, padding=0, bias=use_bias),
                  norm_layer(ndf * 2),
@@ -233,6 +233,8 @@ class PixelDiscriminator(nn.Module):
     def forward(self, inp):
         return self.model(inp)
 
+
+## TODO
 class MultiScaleDiscriminator(nn.Module):
     def __init__(self, input_nc, ndf=64, n_layers=3, num_D=3, norm_layer=nn.BatchNorm2d):
         super(MultiScaleDiscriminator, self).__init__()
@@ -240,7 +242,7 @@ class MultiScaleDiscriminator(nn.Module):
         self.n_layers = n_layers
 
         for i in range(num_D):
-            netD = PatchDiscriminator(input_ch=input_nc, ndf=ndf, n_layers=n_layers, norm_layer=norm_layer)
+            netD = PatchDiscriminator(input_nc=input_nc, ndf=ndf, n_layers=n_layers, norm_layer=norm_layer)
             setattr(self, 'layer'+str(i), netD.model)
 
         self.downsample = nn.AvgPool2d(3, stride=2, padding=1, count_include_pad=False)
@@ -260,5 +262,4 @@ class MultiScaleDiscriminator(nn.Module):
                 input_downsampled = self.downsample(input_downsampled)
 
         return np.sum(result)
-
 

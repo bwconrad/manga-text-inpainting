@@ -7,7 +7,7 @@ from torchsummary import summary
 from utils import *
 from train import train_gan
 from dataset import MangaDataset
-from models import UNetGenerator, PatchDiscriminator, PixelDiscriminator, GlobalGenerator
+from models import GlobalGenerator
 from loss import GANLoss
 
 
@@ -33,7 +33,6 @@ netG = GlobalGenerator(input_nc=2, output_nc=1, n_downsampling=args.n_downsample
 netG.to(device)
 init_weights(netG, args.init_type, init_gain=args.init_gain)
 
-#netD = PatchDiscriminator(input_ch=2, ndf=args.ndf, norm_layer=norm_layer)
 netD = get_discriminator(args)
 netD.to(device)
 init_weights(netD, args.init_type, init_gain=args.init_gain)
@@ -76,11 +75,14 @@ if args.resume:
 
 # Define loss functions
 criterionGAN = GANLoss(args.gan_loss).to(device)
-criterionL1 = torch.nn.L1Loss()
+if args.use_l1_loss:
+    criterionL1 = torch.nn.L1Loss()
+else:
+    criterionL1 = None
 
 # Train model
 train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-          schedulerG, schedulerD, criterionGAN, criterionL1, start_epoch,
+          schedulerG, schedulerD, criterionGAN, criterionL1, start_epoch, 
           device, args, train_hist)
 
 

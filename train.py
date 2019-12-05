@@ -25,11 +25,16 @@ def update_learning_rate(schedulers, type):
                 scheduler.step()
 
 def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-              schedulerG, schedulerD, criterionGAN, criterionL1, start_epoch, 
+              schedulerG, schedulerD, criterionGAN, criterionL1,start_epoch, 
               device, args, train_hist=None):
     
     if not train_hist:
-        train_hist = {'D_losses': [], 'G_losses': [], 'L1_losses': [], 'PSRN': [], 'SSIM': []}
+        train_hist = {'D_losses': [], 
+                      'G_losses': [], 
+                      'L1_losses': [], 
+                      'PSRN': [], 
+                      'SSIM': [],
+                      'L1_val_losses': []}
     start = time.time()
     
     print('\nStarting to train...')
@@ -41,7 +46,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
         # Batch losses of the current epoch
         G_losses = [] 
         D_losses = []
-        L1_losses = []
+        l1_losses = []
 
         for i, (real_inputs, real_targets, masks) in enumerate(train_loader):
             real_inputs, real_targets, masks = real_inputs.to(device), real_targets.to(device), masks.to(device)
@@ -77,21 +82,23 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             g_loss_gan = criterionGAN(validity_fake, target_is_real=True)                    
             
             # L1 loss
-            g_loss_l1 = criterionL1(fake_targets, real_targets) 
+            g_loss_l1 = criterionL1(fake_targets, real_targets) if criterionL1 else 0
 
             # Combined loss
-            g_loss = g_loss_gan + (g_loss_l1 * args.lambda_l1)
+            g_loss = (g_loss_gan * args.lambda_gan) + (g_loss_l1 * args.lambda_l1) 
+                     
             g_loss.backward()
             optimizerG.step()
 
             # Save batch losses
             D_losses.append(d_loss.detach().item())
             G_losses.append(g_loss_gan.detach().item())
-            L1_losses.append(g_loss_l1.detach().item())
+            l1_losses.append(g_loss_l1.detach().item())
 
             if (i+1)%args.batch_log_rate == 0:
-                print('[Epoch {}, Batch {}/{}] L1 loss: {:.6f}'.format(epoch, i+1, len(train_loader), np.mean(L1_losses)))
-            
+                print('[Epoch {}/{}, Batch {}/{}] L1 loss: {:.6f}'
+                      .format(epoch, epochs, i+1, len(train_loader), np.mean(l1_losses)))
+         
         # Save model
         save_checkpoint({'epoch': epoch,
                          'G_state_dict': netG.state_dict(),
@@ -105,7 +112,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
                         }, epoch, args.checkpoint_path)
 
         # Print epoch information
-        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, L1_losses, train_hist)
+        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, l1_losses, train_hist)
         
         # Evaluate on validation set
         print('Evaluating on validation set...')
@@ -113,12 +120,13 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             save_path = args.save_samples_path+'epoch{}/'.format(epoch)
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
-            avg_psrn, avg_ssim = test(netG, val_loader, device, save_batches=args.save_samples_batches, save_path=save_path)
+            avg_psrn, avg_ssim, avg_val_l1 = test(netG, val_loader, device, save_batches=args.save_samples_batches, save_path=save_path)
         else:
-            avg_psrn, avg_ssim = test(netG, val_loader, device)
+            avg_psrn, avg_ssim, avg_val_l1 = test(netG, val_loader, device)
         train_hist['PSRN'].append(avg_psrn)
         train_hist['SSIM'].append(avg_ssim)
-        print("PSRN: {} SSIM: {}\n".format(avg_psrn, avg_ssim))
+        train_hist['L1_val_losses'].append(avg_val_l1)
+        print("PSRN: {} SSIM: {} L1: {}\n".format(avg_psrn, avg_ssim, avg_val_l1))
     
         # Save training history plot
         save_plots(train_hist, args.plot_path)

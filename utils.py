@@ -96,19 +96,17 @@ def get_args():
     parser.add_argument('--height', type=int, default=1024, help='height of input') 
     parser.add_argument('--gan_loss', type=str, default='vanilla', help='GAN loss function [vanilla | lsgan]')
     parser.add_argument('--norm', default='batch', help='normalization layer type [batch | instance | none]')
-    parser.add_argument('--ngf', type=int, default=64, help='number of units in generator fully connected layers')
-    parser.add_argument('--ndf', type=int, default=64, help='number of units in discriminator fully connected layers')
+    parser.add_argument('--ngf', type=int, default=64, help='# of feature channels in generator first layer')
+    parser.add_argument('--ndf', type=int, default=64, help='# of feature channels in discriminator first layer')
     parser.add_argument('--init_type', type=str, default='normal', help='network initialization [normal | xavier | kaiming | orthogonal]')
     parser.add_argument('--init_gain', type=float, default=0.02, help='scaling factor for normal, xavier and orthogonal.')
-    parser.add_argument('--dropout', type=bool, default=True, help='use dropout')
+    parser.add_argument('--dropout', type=bool, default=False, help='use dropout')
     parser.add_argument('--spectral_norm', type=bool, default=False, help='use spectral normalization')
     parser.add_argument('--dilation', type=int, default=1, help='amount of dilation')
     parser.add_argument('--n_downsamples_g', type=int, default=3, help='# of downsamples in generator encoder')
     parser.add_argument('--n_blocks_g', type=int, default=9, help='# of resblocks in generator')
     parser.add_argument('--n_layers_d', type=int, default=3, help='# of layers in discriminator')
     parser.add_argument('--num_d', type=int, default=3, help='# of dicriminators in multiscale discriminator')
-
-
 
     # Optimization arguments
     parser.add_argument('--epochs', type=int, default=1, help='number of training epochs')
@@ -117,9 +115,17 @@ def get_args():
     parser.add_argument('--lrG', type=float, default=0.001, help='generator learning rate')
     parser.add_argument('--beta1', type=float, default=0.9, help='beta1 for adam')
     parser.add_argument('--beta2', type=float, default=0.999, help='beta2 for adam')
-    parser.add_argument('--lambda_l1', type=float, default=100, help='lambda for L1 loss')
     parser.add_argument('--workers', type=int, help='number of workers', default=6) 
-    
+
+    # Loss functions arguments
+    parser.add_argument('--use_l1_loss', type=bool, default=True, help='use L1 loss')
+    parser.add_argument('--use_perceptual_loss', type=bool, default=False, help='use perceptual loss')
+    parser.add_argument('--use_style_loss', type=bool, default=False, help='use style loss')
+    parser.add_argument('--lambda_gan', type=float, default=1, help='lambda for GAN loss')
+    parser.add_argument('--lambda_l1', type=float, default=1, help='lambda for L1 loss')
+    parser.add_argument('--lambda_perceptual', type=float, default=1, help='lambda for perceptual loss')
+    parser.add_argument('--lambda_style', type=float, default=1, help='lambda for style loss')
+
     # lr scheduler arguments
     parser.add_argument('--scheduler', default='none', help='learning rate schedule [linear | step | cosine | none]')
     parser.add_argument('--start_lr_epochs', type=int, default=10, help='# of epochs at starting learning rate')
@@ -132,16 +138,20 @@ def get_args():
     parser.add_argument('--save_samples_rate', type=int, default=1, help='save samples every number of epochs')
     parser.add_argument('--save_samples_batches', type=int, default=4, help='number of sample batches to save')
 
+    args = parser.parse_args()
 
-    return parser.parse_args()
+    if args.scheduler == 'linear':
+        args.epochs = args.start_lr_epochs + args.decay_lr_epochs
+
+    return args
 
 def get_discriminator(args):
     norm_layer = get_norm_layer(args.norm)
 
     if args.discriminator == 'pixel':
-        return PixelDiscriminator(input_ch=2, ndf=args.ndf, norm_layer=norm_layer)
+        return PixelDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer)
     elif args.discriminator == 'patch':
-        return PatchDiscriminator(input_ch=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d)
+        return PatchDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d)
     elif args.discriminator == 'multi':
         return MultiScaleDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d, num_D=args.num_d)
     else:
@@ -192,17 +202,18 @@ def save_plots(train_hist, save_path):
     plt.ylabel("Loss")
     plt.legend()
     plt.savefig(save_path+'gan_loss.png')
-    plt.cla()
+    plt.clf()
 
     # L1 Loss
     plt.figure(figsize=(10,5))
     plt.title("L1 Losses")
-    plt.plot(train_hist['L1_losses'],label="L1")
+    plt.plot(train_hist['L1_losses'],label="L1 Train")
+    plt.plot(train_hist['L1_val_losses'],label="L1 Validation")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
     plt.savefig(save_path+'l1_loss.png')
-    plt.cla()
+    plt.clf()
 
     # SSIM
     plt.figure(figsize=(10,5))
@@ -212,7 +223,7 @@ def save_plots(train_hist, save_path):
     plt.ylabel("SSIM")
     plt.legend()
     plt.savefig(save_path+'ssim.png')
-    plt.cla()
+    plt.clf()
 
     # PSRN
     plt.figure(figsize=(10,5))
@@ -222,6 +233,6 @@ def save_plots(train_hist, save_path):
     plt.ylabel("PSRN")
     plt.legend()
     plt.savefig(save_path+'psrn.png')
-    plt.cla()
+    plt.clf()
 
 
