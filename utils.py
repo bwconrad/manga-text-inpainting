@@ -107,7 +107,7 @@ def get_args():
 
     # Optimization arguments
     parser.add_argument('--epochs', type=int, default=1, help='number of training epochs')
-    parser.add_argument('--batch_size', type=int, default=12, help='batch size')
+    parser.add_argument('--batch_size', type=int, default=4, help='batch size')
     parser.add_argument('--lrD', type=float, default=0.001, help='discriminator learning rate')
     parser.add_argument('--lrG', type=float, default=0.001, help='generator learning rate')
     parser.add_argument('--beta1', type=float, default=0.9, help='beta1 for adam')
@@ -141,7 +141,7 @@ def calculate_time(start, end):
 def save_checkpoint(state, epoch, save_path):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-    torch.save(state, path+'checkpoint_epoch{}.pth.tar'.format(epoch))
+    torch.save(state, save_path+'checkpoint_epoch{}.pth.tar'.format(epoch))
 
 def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, train_hist):
     # Save the average loss during the epoch
@@ -171,11 +171,54 @@ def save_loss_plot(G_losses, D_losses, L1_losses, epoch, save_path=None):
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
-    
-    if save_path:
-        plt.savefig(save_path+'epoch{}_lossplot.png'.format(epoch))
-
+    plt.savefig(save_path+'epoch{}_lossplot.png'.format(epoch))
     plt.cla()
+
+def save_plots(train_hist, save_path):
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    # GAN Loss
+    plt.figure(figsize=(10,5))
+    plt.title("GAN Losses")
+    plt.plot(train_hist['G_losses'],label="G")
+    plt.plot(train_hist['D_losses'],label="D")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(save_path+'gan_loss.png')
+    plt.cla()
+
+    # L1 Loss
+    plt.figure(figsize=(10,5))
+    plt.title("L1 Losses")
+    plt.plot(train_hist['L1_losses'],label="L1")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(save_path+'l1_loss.png')
+    plt.cla()
+
+    # SSIM
+    plt.figure(figsize=(10,5))
+    plt.title("Validation SSIM")
+    plt.plot(train_hist['SSIM'],label="SSIM")
+    plt.xlabel("Epoch")
+    plt.ylabel("SSIM")
+    plt.legend()
+    plt.savefig(save_path+'ssim.png')
+    plt.cla()
+
+    # PSRN
+    plt.figure(figsize=(10,5))
+    plt.title("Validation PSRN")
+    plt.plot(train_hist['PSRN'],label="PSRN")
+    plt.xlabel("Epoch")
+    plt.ylabel("PSRN")
+    plt.legend()
+    plt.savefig(save_path+'psrn.png')
+    plt.cla()
+
 
 def save_metrics_plot(psrn, ssim, epoch, save_path=None):
     if not os.path.exists(save_path):

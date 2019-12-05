@@ -9,7 +9,7 @@ class GANLoss(nn.Module):
         self.mode = mode
 
         if mode == 'lsgan':
-            self.loss = nn.MSLoss()
+            self.loss = nn.MSELoss()
         elif mode == 'vanilla':
             self.loss = nn.BCEWithLogitsLoss()
         else:
