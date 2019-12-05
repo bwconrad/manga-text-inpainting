@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import os
 
 from norm import *
+from models import *
 
 def init_weights(net, init_type='normal', init_gain=0.02):
     def init_func(m):
@@ -90,7 +91,7 @@ def get_args():
 
     # Model arguments
     #parser.add_argument('--generator', required=True, help='unet | ')
-    #parser.add_argument('--discriminator', required=True, help='unet | ')
+    parser.add_argument('--discriminator', required=True, help='pixel | patch | multi')
     parser.add_argument('--width', type=int, default=512, help='width of input')
     parser.add_argument('--height', type=int, default=1024, help='height of input') 
     parser.add_argument('--gan_loss', type=str, default='vanilla', help='GAN loss function [vanilla | lsgan]')
@@ -102,8 +103,12 @@ def get_args():
     parser.add_argument('--dropout', type=bool, default=True, help='use dropout')
     parser.add_argument('--spectral_norm', type=bool, default=False, help='use spectral normalization')
     parser.add_argument('--dilation', type=int, default=1, help='amount of dilation')
-    parser.add_argument('--n_downsamples', type=int, default=3, help='# of downsamples in encoder')
-    parser.add_argument('--n_blocks', type=int, default=9, help='# of resblocks')
+    parser.add_argument('--n_downsamples_g', type=int, default=3, help='# of downsamples in generator encoder')
+    parser.add_argument('--n_blocks_g', type=int, default=9, help='# of resblocks in generator')
+    parser.add_argument('--n_layers_d', type=int, default=3, help='# of layers in discriminator')
+    parser.add_argument('--num_d', type=int, default=3, help='# of dicriminators in multiscale discriminator')
+
+
 
     # Optimization arguments
     parser.add_argument('--epochs', type=int, default=1, help='number of training epochs')
@@ -117,8 +122,8 @@ def get_args():
     
     # lr scheduler arguments
     parser.add_argument('--scheduler', default='none', help='learning rate schedule [linear | step | cosine | none]')
-    parser.add_argument('--start_lr_epochs', type=int, default=100, help='# of epochs at starting learning rate')
-    parser.add_argument('--decay_lr_epochs', type=int, default=100, help='# of epochs to linearly decay learning rate to zero')
+    parser.add_argument('--start_lr_epochs', type=int, default=10, help='# of epochs at starting learning rate')
+    parser.add_argument('--decay_lr_epochs', type=int, default=10, help='# of epochs to linearly decay learning rate to zero')
     parser.add_argument('--step_lr_epochs', type=int, default=50, help='# of epochs between steps')
     parser.add_argument('--gamma', type=int, default=0.1, help='lr decay for step scheduling')
     
@@ -129,6 +134,21 @@ def get_args():
 
 
     return parser.parse_args()
+
+def get_discriminator(args):
+    norm_layer = get_norm_layer(args.norm)
+
+    if args.discriminator == 'pixel':
+        return PixelDiscriminator(input_ch=2, ndf=args.ndf, norm_layer=norm_layer)
+    elif args.discriminator == 'patch':
+        return PatchDiscriminator(input_ch=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d)
+    elif args.discriminator == 'multi':
+        return MultiScaleDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d, num_D=args.num_d)
+    else:
+        raise NotImplementedError('discriminator [%s] is not implemented' % args.discriminator)
+
+
+
 
 def calculate_time(start, end):
     '''

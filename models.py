@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import functools
+import numpy as np
 
 def spectral_norm(module, use=True):
     if use:
@@ -231,3 +232,33 @@ class PixelDiscriminator(nn.Module):
 
     def forward(self, inp):
         return self.model(inp)
+
+class MultiScaleDiscriminator(nn.Module):
+    def __init__(self, input_nc, ndf=64, n_layers=3, num_D=3, norm_layer=nn.BatchNorm2d):
+        super(MultiScaleDiscriminator, self).__init__()
+        self.num_D = num_D
+        self.n_layers = n_layers
+
+        for i in range(num_D):
+            netD = PatchDiscriminator(input_ch=input_nc, ndf=ndf, n_layers=n_layers, norm_layer=norm_layer)
+            setattr(self, 'layer'+str(i), netD.model)
+
+        self.downsample = nn.AvgPool2d(3, stride=2, padding=1, count_include_pad=False)
+
+    def single_forward(self, model, inp):
+        return [model(inp)]
+
+    def forward(self, inp):
+        result = []
+        input_downsampled = inp
+
+        for i in range(self.num_D):
+            model = getattr(self, 'layer'+str(self.num_D-1-i))
+            result.append(self.single_forward(model, input_downsampled))
+
+            if i != (self.num_D-1):
+                input_downsampled = self.downsample(input_downsampled)
+
+        return np.sum(result)
+
+

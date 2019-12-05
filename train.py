@@ -25,9 +25,11 @@ def update_learning_rate(schedulers, type):
                 scheduler.step()
 
 def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-              schedulerG, schedulerD, criterionGAN, criterionL1, start_epoch, device, args):
+              schedulerG, schedulerD, criterionGAN, criterionL1, start_epoch, 
+              device, args, train_hist=None):
     
-    train_hist = {'D_losses': [], 'G_losses': [], 'L1_losses': [], 'PSRN': [], 'SSIM': []}
+    if not train_hist:
+        train_hist = {'D_losses': [], 'G_losses': [], 'L1_losses': [], 'PSRN': [], 'SSIM': []}
     start = time.time()
     
     print('\nStarting to train...')
@@ -98,7 +100,8 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
                          'optimizerD_state_dict' : optimizerD.state_dict(),
                          'schedulerG_state_dict' : schedulerG.state_dict() if schedulerG else None,
                          'schedulerD_state_dict' : schedulerD.state_dict() if schedulerD else None,  
-                         'args': args
+                         'args': args,
+                         'train_hist': train_hist
                         }, epoch, args.checkpoint_path)
 
         # Print epoch information

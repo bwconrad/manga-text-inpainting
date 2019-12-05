@@ -28,12 +28,13 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_si
 # Setup models
 print('\nInitializing models...')
 norm_layer = get_norm_layer(args.norm)
-netG = GlobalGenerator(input_nc=2, output_nc=1, n_downsampling=args.n_downsamples, n_blocks=args.n_blocks, ngf=args.ngf, norm_layer=norm_layer,
+netG = GlobalGenerator(input_nc=2, output_nc=1, n_downsampling=args.n_downsamples_g, n_blocks=args.n_blocks_g, ngf=args.ngf, norm_layer=norm_layer,
                            use_dropout=args.dropout, use_spectral_norm=args.spectral_norm, dilation=args.dilation)
 netG.to(device)
 init_weights(netG, args.init_type, init_gain=args.init_gain)
 
-netD = PixelDiscriminator(input_ch=2, ndf=args.ndf, norm_layer=norm_layer)
+#netD = PatchDiscriminator(input_ch=2, ndf=args.ndf, norm_layer=norm_layer)
+netD = get_discriminator(args)
 netD.to(device)
 init_weights(netD, args.init_type, init_gain=args.init_gain)
 
@@ -51,6 +52,7 @@ else:
     print('Using no learning rate scheduler')
     
 start_epoch = 1
+train_hist = None
 
 # Resume from checkpoint
 if args.resume:
@@ -58,6 +60,7 @@ if args.resume:
     checkpoint = torch.load(args.resume)
     start_epoch = checkpoint['epoch']+1
     resume_args = checkpoint['args']
+    train_hist = checkpoint['train_hist']
 
     netG.load_state_dict(checkpoint['G_state_dict'])
     netD.load_state_dict(checkpoint['D_state_dict'])
@@ -77,7 +80,8 @@ criterionL1 = torch.nn.L1Loss()
 
 # Train model
 train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-          schedulerG, schedulerD, criterionGAN, criterionL1, start_epoch, device, args)
+          schedulerG, schedulerD, criterionGAN, criterionL1, start_epoch,
+          device, args, train_hist)
 
 
 
