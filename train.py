@@ -97,7 +97,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
 
             if (i+1)%args.batch_log_rate == 0:
                 print('[Epoch {}/{}, Batch {}/{}] L1 loss: {:.6f}'
-                      .format(epoch, epochs, i+1, len(train_loader), np.mean(l1_losses)))
+                      .format(epoch, args.epochs, i+1, len(train_loader), np.mean(l1_losses)))
          
         # Save model
         save_checkpoint({'epoch': epoch,

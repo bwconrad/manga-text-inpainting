@@ -55,4 +55,4 @@ def test(netG, loader, device, save_batches=0, save_path=None):
             for i, img in enumerate(save_images_dirty):
                 imsave(os.path.join(save_path, f'dirty_{i}.png'), img) 
 
-    return avg_psrn, avg_ssim, l1_losses
+    return avg_psrn, avg_ssim, avg_l1

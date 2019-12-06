@@ -157,9 +157,6 @@ def get_discriminator(args):
     else:
         raise NotImplementedError('discriminator [%s] is not implemented' % args.discriminator)
 
-
-
-
 def calculate_time(start, end):
     '''
         Calculate and return the hours, minutes and seconds between start and end times
