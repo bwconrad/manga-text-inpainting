@@ -53,28 +53,42 @@ def get_norm_layer(norm_type='instance'):
         raise NotImplementedError('normalization layer [%s] is not found' % norm_type)
     return norm_layer
 
-def get_scheduler(optimizer, args):
+def get_schedulers(optimizerG, optimizerD, args):
     if args.scheduler == 'linear':
         def lambda_rule(epoch):
             return 1.0 - max(0, epoch - args.start_lr_epochs) /float(args.decay_lr_epochs + 1)
-        scheduler = lr_scheduler.LambdaLR(optimizer, lambda_rule)
+        schedulerG = lr_scheduler.LambdaLR(optimizerG, lambda_rule)
+        schedulerD = lr_scheduler.LambdaLR(optimizerD, lambda_rule)
+        print('Using a LINEAR lr schedule starting with lrG={} and lrD={} for {} epochs and decaying to 0 for {} epochs' \
+               .format(args.lrG, args.lrD, args.start_lr_epochs, args.decay_lr_epochs))
     
     elif args.scheduler == 'step':
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=args.start_lr_epochs, gamma=args.gamma)
+        schedulerG = lr_scheduler.StepLR(optimizerG, step_size=args.step_lr_epochs, gamma=args.step_gamma)
+        schedulerD = lr_scheduler.StepLR(optimizerD, step_size=args.step_lr_epochs, gamma=args.step_gamma)
+        print('Using a STEP lr schedule starting with lrG={} and lrD={} and decreasing by {} every {} epochs for {} epochs' \
+               .format(args.lrG, args.lrD, args.step_gamma, args.step_lr_epochs, args.epochs))
 
     elif args.scheduler == 'plateau':
-        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.01, patience=5)
+        return NotImplementedError('Plateau lr schedule not implement yet')
+        #scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.01, patience=5)
+        
 
     elif args.scheduler == 'cosine':
-        scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=0)
+        schedulerG = lr_scheduler.CosineAnnealingLR(optimizerG, T_max=args.epochs, eta_min=0)
+        schedulerD = lr_scheduler.CosineAnnealingLR(optimizerD, T_max=args.epochs, eta_min=0)
+        print('Using a COSINE lr schedule starting with lrG={} and lrD={} for {} epochs' \
+              .format(args.lrG, args.lrD, args.epochs))
 
     elif args.scheduler == 'none':
-        scheduler = None
+        schedulerG = None
+        schedulerD = None
+        print('Using no lr schedule with with lrG={} and lrD={} for {} epochs' \
+              .format(args.lrG, args.lrD, args.epochs))
 
     else:
-        return NotImplementedError('learning rate policy [%s] is not implemented', args.scheduler)
+        return NotImplementedError('learning rate schedule {} is not implemented'.format(args.scheduler))
     
-    return scheduler
+    return schedulerG, schedulerD
 
 def get_args():
     ''' 
@@ -131,7 +145,7 @@ def get_args():
     parser.add_argument('--start_lr_epochs', type=int, default=10, help='# of epochs at starting learning rate')
     parser.add_argument('--decay_lr_epochs', type=int, default=10, help='# of epochs to linearly decay learning rate to zero')
     parser.add_argument('--step_lr_epochs', type=int, default=50, help='# of epochs between steps')
-    parser.add_argument('--gamma', type=int, default=0.1, help='lr decay for step scheduling')
+    parser.add_argument('--step_gamma', type=int, default=0.1, help='lr decay for step scheduling')
     
     # Logging arguments
     parser.add_argument('--batch_log_rate', type=int, default=50, help='update on training every number of batches')

@@ -42,14 +42,8 @@ print('\nSetting up optimizer...')
 optimizerG = optim.Adam(netG.parameters(), lr=args.lrG, betas=(args.beta1, args.beta2))
 optimizerD = optim.Adam(netD.parameters(), lr=args.lrD, betas=(args.beta1, args.beta2))
 
-schedulerG = get_scheduler(optimizerG, args)
-schedulerD = get_scheduler(optimizerD, args)
+schedulerG, schedulerD = get_schedulers(optimizerG, optimizerD, args)
 
-if schedulerG:
-    print('Using a {} learning rate schedule'.format(type(schedulerG).__name__))
-else:
-    print('Using no learning rate scheduler')
-    
 start_epoch = 1
 train_hist = None
 
