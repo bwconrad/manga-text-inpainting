@@ -1,5 +1,6 @@
 __pycache__/
 g.py
+blur.py
 *.png
 *.jpg
 *.zip
