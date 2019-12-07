@@ -24,7 +24,13 @@ class GANLoss(nn.Module):
         return target_tensor.expand_as(prediction)
 
     def __call__(self, prediction, target_is_real):
-        if self.mode in ['lsgan', 'vanilla']:
+        if isinstance(prediction[0], list):
+            loss = 0
+            for p in prediction:
+                pred = p[-1]
+                target_tensor = self.get_target_tensor(pred, target_is_real)
+                loss += self.loss(pred, target_tensor)
+        else:
             target_tensor = self.get_target_tensor(prediction, target_is_real)
             loss = self.loss(prediction, target_tensor)
         return loss

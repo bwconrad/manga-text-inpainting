@@ -13,11 +13,11 @@ class MangaDataset(data.Dataset):
     def __init__(self, data_root, ann_file, height=1024, width=512):
         # Load annotations
         print('Loading Annotations from {}'.format(ann_file))
-        train_ann = pd.read_csv(data_root + ann_file)
+        ann = pd.read_csv(data_root + ann_file)
 
         # Get file names and bounding boxes
-        self.imgs = train_ann['file_name'].tolist()
-        self.bboxes = train_ann['bounding_boxes'].tolist()
+        self.imgs = ann['file_name'].tolist()
+        self.bboxes = ann['bounding_boxes'].tolist()
         print('\t {} Images'.format(len(self.imgs)))
         
         self.root = data_root
