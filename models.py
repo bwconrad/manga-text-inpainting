@@ -233,8 +233,6 @@ class PixelDiscriminator(nn.Module):
     def forward(self, inp):
         return self.model(inp)
 
-
-## TODO
 class MultiScaleDiscriminator(nn.Module):
     def __init__(self, input_nc, ndf=64, n_layers=3, num_D=3, norm_layer=nn.BatchNorm2d):
         super(MultiScaleDiscriminator, self).__init__()

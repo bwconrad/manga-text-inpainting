@@ -82,7 +82,7 @@ def get_schedulers(optimizerG, optimizerD, args):
     elif args.scheduler == 'none':
         schedulerG = None
         schedulerD = None
-        print('Using no lr schedule with with lrG={} and lrD={} for {} epochs' \
+        print('Using no lr schedule with lrG={} and lrD={} for {} epochs' \
               .format(args.lrG, args.lrD, args.epochs))
 
     else:
@@ -114,7 +114,7 @@ def get_args():
     parser.add_argument('--ndf', type=int, default=64, help='# of feature channels in discriminator first layer')
     parser.add_argument('--init_type', type=str, default='normal', help='network initialization [normal | xavier | kaiming | orthogonal]')
     parser.add_argument('--init_gain', type=float, default=0.02, help='scaling factor for normal, xavier and orthogonal.')
-    parser.add_argument('--dropout', type=bool, default=False, help='use dropout')
+    parser.add_argument('--dropout', type=bool, default=True, help='use dropout')
     parser.add_argument('--spectral_norm', type=bool, default=False, help='use spectral normalization')
     parser.add_argument('--dilation', type=int, default=1, help='amount of dilation')
     parser.add_argument('--n_downsamples_g', type=int, default=3, help='# of downsamples in generator encoder')
@@ -136,7 +136,7 @@ def get_args():
     parser.add_argument('--use_perceptual_loss', type=bool, default=False, help='use perceptual loss')
     parser.add_argument('--use_style_loss', type=bool, default=False, help='use style loss')
     parser.add_argument('--lambda_gan', type=float, default=1, help='lambda for GAN loss')
-    parser.add_argument('--lambda_l1', type=float, default=1, help='lambda for L1 loss')
+    parser.add_argument('--lambda_l1', type=float, default=100, help='lambda for L1 loss')
     parser.add_argument('--lambda_perceptual', type=float, default=1, help='lambda for perceptual loss')
     parser.add_argument('--lambda_style', type=float, default=1, help='lambda for style loss')
 

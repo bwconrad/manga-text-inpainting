@@ -45,8 +45,6 @@ class MangaDataset(data.Dataset):
 
         return mask
 
-        
-
     def __getitem__(self, index):
         # Load the clean and dirty images
         dirty_path = self.root + 'dirty/' + self.imgs[index]
