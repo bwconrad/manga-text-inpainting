@@ -1,4 +1,5 @@
 __pycache__/
+./output/results/
 g.py
 blur.py
 *.png
