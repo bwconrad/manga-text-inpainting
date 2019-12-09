@@ -29,7 +29,7 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_si
 print('\nInitializing models...')
 norm_layer = get_norm_layer(args.norm)
 netG = GlobalGenerator(input_nc=2, output_nc=1, n_downsampling=args.n_downsamples_g, n_blocks=args.n_blocks_g, ngf=args.ngf, norm_layer=norm_layer,
-                           use_dropout=args.dropout, use_spectral_norm=args.spectral_norm, dilation=args.dilation)
+                       use_dropout=args.dropout, use_spectral_norm=args.spectral_norm, dilation=args.dilation, kernel_size=args.kernel_size_g)
 netG.to(device)
 init_weights(netG, args.init_type, init_gain=args.init_gain)
 
