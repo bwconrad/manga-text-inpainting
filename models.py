@@ -81,7 +81,8 @@ class GlobalGenerator(nn.Module):
         # Decoder        
         for i in range(n_downsampling):
             mult = 2**(n_downsampling - i)
-            model += [spectral_norm(nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2), kernel_size=kernel_size, stride=2, padding=1, output_padding=1), use_spectral_norm),
+            model += [spectral_norm(nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2), kernel_size=kernel_size, stride=2, padding=1, 
+                      output_padding=1 if kernel_size==3 else 0), use_spectral_norm),
                        norm_layer(int(ngf * mult / 2)), 
                        activation]
 

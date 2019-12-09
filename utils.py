@@ -121,7 +121,7 @@ def get_args():
     parser.add_argument('--n_blocks_g', type=int, default=9, help='# of resblocks in generator')
     parser.add_argument('--n_layers_d', type=int, default=3, help='# of layers in discriminator')
     parser.add_argument('--num_d', type=int, default=3, help='# of dicriminators in multiscale discriminator')
-    parser.add_argument('--kernel_size_g', type=int, default=3, help='kernel width in encoder/decoder')
+    parser.add_argument('--kernel_size_g', type=int, default=3, help='kernel width in encoder/decoder [3 | 4]')
 
 
     # Optimization arguments
