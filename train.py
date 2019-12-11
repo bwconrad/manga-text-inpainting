@@ -24,14 +24,16 @@ def update_learning_rate(schedulers, type):
             else:
                 scheduler.step()
 
-def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-              schedulerG, schedulerD, criterionGAN, criterionL1,start_epoch, 
-              device, args, train_hist=None):
+def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
+              schedulerG, schedulerD, criterionGAN, criterionL1, criterionPerceptual,
+              criterionStyle, start_epoch, device, args, train_hist=None):
     
     if not train_hist:
         train_hist = {'D_losses': [], 
                       'G_losses': [], 
-                      'L1_losses': [], 
+                      'L1_losses': [],
+                      'Perceptual_losses': [],
+                      'Style_losses': [], 
                       'PSRN': [], 
                       'SSIM': [],
                       'L1_val_losses': []}
@@ -47,6 +49,8 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
         G_losses = [] 
         D_losses = []
         l1_losses = []
+        perceptual_losses = []
+        style_losses = []
 
         for i, (real_inputs, real_targets, masks) in enumerate(train_loader):
             real_inputs, real_targets, masks = real_inputs.to(device), real_targets.to(device), masks.to(device)
@@ -81,11 +85,18 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             validity_fake = netD(torch.cat((fake_targets, masks), 1))  
             g_loss_gan = criterionGAN(validity_fake, target_is_real=True)                    
             
-            # L1 loss
-            g_loss_l1 = criterionL1(fake_targets, real_targets) if criterionL1 else 0
+            # L1 loss - scaled by size of masked area
+            g_loss_l1 = criterionL1(fake_targets, real_targets) / torch.mean(masks) if criterionL1 else 0 
+             
+            # Perceptual loss
+            g_loss_perceptual = criterionPerceptual(real_targets, fake_targets, vgg) if criterionPerceptual else 0
 
+            # Style loss
+            g_loss_style = criterionStyle(real_targets * masks, fake_targets * masks, vgg) if criterionStyle else 0
+            
             # Combined loss
-            g_loss = (g_loss_gan * args.lambda_gan) + (g_loss_l1 * args.lambda_l1) 
+            g_loss = (g_loss_gan * args.lambda_gan) + (g_loss_l1 * args.lambda_l1) + \
+                     (g_loss_perceptual * args.lambda_perceptual) + (g_loss_style * args.lambda_style) 
                      
             g_loss.backward()
             optimizerG.step()
@@ -94,10 +105,14 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             D_losses.append(d_loss.detach().item())
             G_losses.append(g_loss_gan.detach().item())
             l1_losses.append(g_loss_l1.detach().item())
+            perceptual_losses.append(g_loss_perceptual.detach().item())
+            style_losses.append(g_loss_style.detach().item())
+
 
             if (i+1)%args.batch_log_rate == 0:
-                print('[Epoch {}/{}, Batch {}/{}] L1 loss: {:.6f}'
-                      .format(epoch, args.epochs, i+1, len(train_loader), np.mean(l1_losses)))
+                print('[Epoch {}/{}, Batch {}/{}] L1 loss: {:.6f} Perceptual loss: {:.6f} Style loss: {:.6f}'
+                      .format(epoch, args.epochs, i+1, len(train_loader), np.mean(l1_losses), 
+                              np.mean(perceptual_losses), np.mean(style_losses)))
          
         # Save model
         save_checkpoint({'epoch': epoch,

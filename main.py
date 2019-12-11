@@ -2,13 +2,13 @@ import torch
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import sys
-from torchsummary import summary
+#from torchsummary import summary
 
 from utils import *
 from train import train_gan
 from dataset import MangaDataset
-from models import GlobalGenerator
-from loss import GANLoss
+from models import GlobalGenerator, VGG19
+from loss import GANLoss, PerceptualLoss, StyleLoss
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -29,13 +29,19 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_si
 print('\nInitializing models...')
 norm_layer = get_norm_layer(args.norm)
 netG = GlobalGenerator(input_nc=2, output_nc=1, n_downsampling=args.n_downsamples_g, n_blocks=args.n_blocks_g, ngf=args.ngf, norm_layer=norm_layer,
-                       use_dropout=args.dropout, use_spectral_norm=args.spectral_norm, dilation=args.dilation, kernel_size=args.kernel_size_g)
+                       use_dropout=args.dropout, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation, kernel_size=args.kernel_size_g)
 netG.to(device)
 init_weights(netG, args.init_type, init_gain=args.init_gain)
 
 netD = get_discriminator(args)
 netD.to(device)
 init_weights(netD, args.init_type, init_gain=args.init_gain)
+
+if args.use_perceptual_loss or args.use_style_loss:
+    vgg = VGG19()
+    vgg.to(device)
+else:
+    vgg = None
 
 # Setup optimizer and scheduler
 print('\nSetting up optimizer...')
@@ -69,15 +75,15 @@ if args.resume:
 
 # Define loss functions
 criterionGAN = GANLoss(args.gan_loss).to(device)
-if args.use_l1_loss:
-    criterionL1 = torch.nn.L1Loss()
-else:
-    criterionL1 = None
+criterionL1 = torch.nn.L1Loss() if args.use_l1_loss else None
+criterionPerceptual = PerceptualLoss() if args.use_perceptual_loss else None
+criterionStyle = StyleLoss() if args.use_style_loss else None
+print('Using losses: GAN=True, L1={}, Perceptual={}, Style={}'.format(args.use_l1_loss, args.use_perceptual_loss, args.use_style_loss))
 
 # Train model
-train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-          schedulerG, schedulerD, criterionGAN, criterionL1, start_epoch, 
-          device, args, train_hist)
+train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
+          schedulerG, schedulerD, criterionGAN, criterionL1, criterionPerceptual,
+          criterionStyle, start_epoch, device, args, train_hist)
 
 
 

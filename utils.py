@@ -82,7 +82,7 @@ def get_schedulers(optimizerG, optimizerD, args):
     elif args.scheduler == 'none':
         schedulerG = None
         schedulerD = None
-        print('Using no lr schedule with lrG={} and lrD={} for {} epochs' \
+        print('Using NO lr schedule with lrG={} and lrD={} for {} epochs' \
               .format(args.lrG, args.lrD, args.epochs))
 
     else:
@@ -115,7 +115,8 @@ def get_args():
     parser.add_argument('--init_type', type=str, default='normal', help='network initialization [normal | xavier | kaiming | orthogonal]')
     parser.add_argument('--init_gain', type=float, default=0.02, help='scaling factor for normal, xavier and orthogonal.')
     parser.add_argument('--dropout', type=bool, default=True, help='use dropout')
-    parser.add_argument('--spectral_norm', type=bool, default=False, help='use spectral normalization')
+    parser.add_argument('--spectral_norm_g', type=bool, default=False, help='use spectral normalization in generator')
+    parser.add_argument('--spectral_norm_d', type=bool, default=False, help='use spectral normalization in discriminator')
     parser.add_argument('--dilation', type=int, default=1, help='amount of dilation')
     parser.add_argument('--n_downsamples_g', type=int, default=3, help='# of downsamples in generator encoder')
     parser.add_argument('--n_blocks_g', type=int, default=9, help='# of resblocks in generator')
@@ -167,9 +168,10 @@ def get_discriminator(args):
     if args.discriminator == 'pixel':
         return PixelDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer)
     elif args.discriminator == 'patch':
-        return PatchDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d)
+        return PatchDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d, use_spectral_norm = args.spectral_norm_d)
     elif args.discriminator == 'multi':
-        return MultiScaleDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d, num_D=args.num_d)
+        return MultiScaleDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, use_spectral_norm = args.spectral_norm_d, 
+                                       n_layers=args.n_layers_d, num_D=args.num_d)
     else:
         raise NotImplementedError('discriminator [%s] is not implemented' % args.discriminator)
 
@@ -186,7 +188,7 @@ def save_checkpoint(state, epoch, save_path):
         os.makedirs(save_path)
     torch.save(state, save_path+'checkpoint_epoch{}.pth.tar'.format(epoch))
 
-def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, train_hist):
+def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, perceptual_losses, style_losses, train_hist):
     # Save the average loss during the epoch
     avg_D_loss = np.mean(D_losses)
     train_hist['D_losses'].append(avg_D_loss)
@@ -197,10 +199,17 @@ def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, train_hi
     avg_L1_loss = np.mean(L1_losses)
     train_hist['L1_losses'].append(avg_L1_loss)
 
+    avg_perceptual_loss = np.mean(perceptual_losses)
+    train_hist['Perceptual_losses'].append(avg_perceptual_loss)
+
+    avg_style_loss = np.mean(style_losses)
+    train_hist['Style_losses'].append(avg_style_loss)
+
     # Print epoch stats
     hours, minutes, seconds = calculate_time(start, end)
-    print("\nEpoch {} Completed in {}h {}m {:04.2f}s: D loss: {} G loss: {} L1 loss: {}"
-              .format(epoch, hours, minutes, seconds, avg_D_loss, avg_G_loss, avg_L1_loss))
+    print("\nEpoch {} Completed in {}h {}m {:04.2f}s: D loss: {} G loss: {} L1 loss: {} Perceptual loss: {} Style loss: {}"
+              .format(epoch, hours, minutes, seconds, avg_D_loss, avg_G_loss, avg_L1_loss,
+                      avg_perceptual_loss, avg_style_loss))
 
 def save_plots(train_hist, save_path):
     if not os.path.exists(save_path):
@@ -226,6 +235,26 @@ def save_plots(train_hist, save_path):
     plt.ylabel("Loss")
     plt.legend()
     plt.savefig(save_path+'l1_loss.png')
+    plt.clf()
+
+    # Perceptual Loss
+    plt.figure(figsize=(10,5))
+    plt.title("Perceptual Losses")
+    plt.plot(train_hist['Perceptual_losses'],label="Perceptual")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(save_path+'perceptual_loss.png')
+    plt.clf()
+
+    # Style Loss
+    plt.figure(figsize=(10,5))
+    plt.title("Style Losses")
+    plt.plot(train_hist['Style_losses'],label="Style")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(save_path+'style_loss.png')
     plt.clf()
 
     # SSIM
