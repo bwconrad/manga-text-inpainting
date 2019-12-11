@@ -73,12 +73,19 @@ if args.resume:
 
     print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
+print(args.spectral_norm_g)
+print(args.spectral_norm_d)
+
 # Define loss functions
 criterionGAN = GANLoss(args.gan_loss).to(device)
 criterionL1 = torch.nn.L1Loss() if args.use_l1_loss else None
 criterionPerceptual = PerceptualLoss() if args.use_perceptual_loss else None
 criterionStyle = StyleLoss() if args.use_style_loss else None
-print('Using losses: GAN=True, L1={}, Perceptual={}, Style={}'.format(args.use_l1_loss, args.use_perceptual_loss, args.use_style_loss))
+print('Using losses: GAN={}, L1={}, Perceptual={}, Style={}'
+       .format(args.lambda_gan,
+               args.lambda_l1 if criterionL1 else 0, 
+               args.lambda_perceptual if criterionPerceptual else 0, 
+               args.lambda_style if criterionStyle else 0))
 
 # Train model
 train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
