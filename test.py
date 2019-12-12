@@ -35,7 +35,7 @@ def test(netG, loader, device, save_batches=0, save_path=None):
             psrn_losses.append(psnr)
 
             # Get L1 loss
-            l1 = criterionL1(fake_targets, real_targets)
+            l1 = criterionL1(fake_targets, real_targets) / torch.mean(masks)
             l1_losses.append(l1.detach().item())
 
             # Save images
