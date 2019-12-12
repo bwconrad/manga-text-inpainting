@@ -110,7 +110,7 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
 
 
             if (i+1)%args.batch_log_rate == 0:
-                print('[Epoch {}/{}, Batch {}/{}] L1 loss: {:.6f} Perceptual loss: {:.6f} Style loss: {:.6f}'
+                print('[Epoch {}/{}, Batch {}/{}] L1 loss: {:.6f} Perceptual loss: {:.6f} Style loss: {:.12f}'
                       .format(epoch, args.epochs, i+1, len(train_loader), np.mean(l1_losses), 
                               np.mean(perceptual_losses), np.mean(style_losses)))
          
@@ -127,7 +127,7 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
                         }, epoch, args.checkpoint_path)
 
         # Print epoch information
-        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, l1_losses, train_hist)
+        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, l1_losses, perceptual_losses, style_losses, train_hist)
         
         # Evaluate on validation set
         print('Evaluating on validation set...')

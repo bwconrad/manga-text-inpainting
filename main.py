@@ -73,9 +73,6 @@ if args.resume:
 
     print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
-print(args.spectral_norm_g)
-print(args.spectral_norm_d)
-
 # Define loss functions
 criterionGAN = GANLoss(args.gan_loss).to(device)
 criterionL1 = torch.nn.L1Loss() if args.use_l1_loss else None
