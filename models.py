@@ -128,7 +128,7 @@ class PixelDiscriminator(nn.Module):
     '''
     1x1 PatchGAN discriminator
     '''
-    def __init__(self, input_nc, ndf=64, norm_layer=nn.BatchNorm2d):
+    def __init__(self, input_nc, ndf=64, norm_layer=nn.BatchNorm2d, use_spectral_norm=False):
         super(PixelDiscriminator, self).__init__()
 
         # No bias since BatchNorm2d has affine parameters
@@ -137,12 +137,12 @@ class PixelDiscriminator(nn.Module):
         else:
             use_bias = norm_layer == nn.InstanceNorm2d
 
-        model = [nn.Conv2d(input_nc, ndf, kernel_size=1, stride=1, padding=0),
+        model = [spectral_norm(nn.Conv2d(input_nc, ndf, kernel_size=1, stride=1, padding=0), use_spectral_norm),
                  nn.LeakyReLU(0.2, True),
-                 nn.Conv2d(ndf, ndf * 2, kernel_size=1, stride=1, padding=0, bias=use_bias),
+                 spectral_norm(nn.Conv2d(ndf, ndf * 2, kernel_size=1, stride=1, padding=0, bias=use_bias), use_spectral_norm),
                  norm_layer(ndf * 2),
                  nn.LeakyReLU(0.2, True),
-                 nn.Conv2d(ndf * 2, 1, kernel_size=1, stride=1, padding=0)]
+                 spectral_norm(nn.Conv2d(ndf * 2, 1, kernel_size=1, stride=1, padding=0), use_spectral_norm)]
         
         self.model = nn.Sequential(*model)
 
