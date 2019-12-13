@@ -1,0 +1,35 @@
+Epoch 8:
+PSRN: 24.81488032078507 SSIM: 0.9644816408554713 L1: 0.14616615491608778
+D loss: 0.1435870917956848 G loss: 0.4900609944630266 L1 loss: 0.1644374609394737 Perceptual loss: 0.5288911097805564 Style loss: 0.00024057448202318373
+
+Epoch 16:
+PSRN: 25.626520108262156 SSIM: 0.9661187589168548 L1: 0.13667091550926366 (epoch 12)
+D loss: 0.12797634517452597 G loss: 0.5617062302025874 L1 loss: 0.13186644152467975 Perceptual loss: 0.43777606398669616 Style loss: 0.00021294367699668
+
+python ./manga-text-inpainting/main.py \
+--data_path ./data/ \
+--epochs 8 \
+--batch_size 8 \
+--ngf 32 \
+--ndf 32 \
+--gan_loss lsgan \
+--discriminator pixel \
+--scheduler none \
+--use_l1_loss \
+--use_perceptual_loss \
+--use_style_loss \
+--lambda_gan 0.1 \
+--lambda_l1 1 \
+--lambda_perceptual 0.1 \
+--lambda_style 250 \
+--width 256 \
+--height 512 \
+--n_downsamples_g 2 \
+--lrG 0.0002 \
+--lrD 0.00002 \
+--beta1 0 \
+--beta2 0.9 \
+--norm instance \
+--dilation 2 \
+--kernel_size_g 4 \
+--spectral_norm_d 

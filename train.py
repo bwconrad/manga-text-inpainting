@@ -113,7 +113,7 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
                 print('[Epoch {}/{}, Batch {}/{}] L1 loss: {:.6f} Perceptual loss: {:.6f} Style loss: {:.12f}'
                       .format(epoch, args.epochs, i+1, len(train_loader), np.mean(l1_losses), 
                               np.mean(perceptual_losses), np.mean(style_losses)))
-         
+            
         # Save model
         save_checkpoint({'epoch': epoch,
                          'G_state_dict': netG.state_dict(),
@@ -128,7 +128,7 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
 
         # Print epoch information
         print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, l1_losses, perceptual_losses, style_losses, train_hist)
-        
+    
         # Evaluate on validation set
         print('Evaluating on validation set...')
         if epoch%args.save_samples_rate == 0:
@@ -150,8 +150,9 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
         if schedulerG:
             update_learning_rate([schedulerG, schedulerD], args.scheduler)
 
-    shutil.make_archive('images', 'zip', 'output/samples/')
-    shutil.make_archive('checkpoints', 'zip', 'output/checkpoints/')
+    if args.archive:
+        shutil.make_archive('images', 'zip', 'output/samples/')
+        shutil.make_archive('checkpoints', 'zip', 'output/checkpoints/')
 
     hours, minutes, seconds = calculate_time(start, time.time())
     print('Training completed in {}h {}m {:04.2f}s'.format(hours, minutes, seconds))
