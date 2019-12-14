@@ -37,8 +37,6 @@ class GANLoss(nn.Module):
 
 class StyleLoss(nn.Module):
     '''
-    Perceptual loss, VGG-based
-    https://arxiv.org/abs/1603.08155
     https://github.com/dxyang/StyleTransfer/blob/master/utils.py
     '''
 
@@ -69,8 +67,6 @@ class StyleLoss(nn.Module):
 
 class PerceptualLoss(nn.Module):
     '''
-    Perceptual loss, VGG-based
-    https://arxiv.org/abs/1603.08155
     https://github.com/dxyang/StyleTransfer/blob/master/utils.py
     '''
 
@@ -83,6 +79,7 @@ class PerceptualLoss(nn.Module):
         # Compute features
         x_vgg, y_vgg = vgg(x), vgg(y)
 
+        # Compute loss 
         content_loss = 0.0
         content_loss += self.weights[0] * self.criterion(x_vgg['relu1_1'], y_vgg['relu1_1'])
         content_loss += self.weights[1] * self.criterion(x_vgg['relu2_1'], y_vgg['relu2_1'])
@@ -92,3 +89,17 @@ class PerceptualLoss(nn.Module):
 
         return content_loss
 
+
+class TVLoss(nn.Module):
+    '''
+        https://github.com/YaN9-Y/lafin/blob/master/src/loss.py
+    '''
+    def __init__(self):
+        super(TVLoss,self).__init__()
+
+    def forward(self, x):
+        height = x.size()[2]
+        width = x.size()[3]
+        tv_h = torch.div(torch.sum(torch.abs(x[:,:,1:,:] - x[:,:,:-1,:])),(x.size()[0]*x.size()[1]*(height-1)*width))
+        tv_w = torch.div(torch.sum(torch.abs(x[:,:,:,1:] - x[:,:,:,:-1])),(x.size()[0]*x.size()[1]*(height)*(width-1)))
+        return tv_w+tv_h

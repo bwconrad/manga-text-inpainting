@@ -8,7 +8,7 @@ from utils import *
 from train import train_gan
 from dataset import MangaDataset
 from models import GlobalGenerator, VGG19
-from loss import GANLoss, PerceptualLoss, StyleLoss
+from loss import GANLoss, PerceptualLoss, StyleLoss, TVLoss
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -78,16 +78,18 @@ criterionGAN = GANLoss(args.gan_loss).to(device)
 criterionL1 = torch.nn.L1Loss() if args.use_l1_loss else None
 criterionPerceptual = PerceptualLoss() if args.use_perceptual_loss else None
 criterionStyle = StyleLoss() if args.use_style_loss else None
-print('Using losses: GAN={}, L1={}, Perceptual={}, Style={}'
+criterionTV = TVLoss() if args.use_tv_loss else None
+print('Using losses: GAN={}, L1={}, Perceptual={}, Style={}, TV={}'
        .format(args.lambda_gan,
                args.lambda_l1 if criterionL1 else 0, 
                args.lambda_perceptual if criterionPerceptual else 0, 
-               args.lambda_style if criterionStyle else 0))
+               args.lambda_style if criterionStyle else 0,
+               args.lambda_tv if criterionTV else 0))
 
 # Train model
 train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
           schedulerG, schedulerD, criterionGAN, criterionL1, criterionPerceptual,
-          criterionStyle, start_epoch, device, args, train_hist)
+          criterionStyle, criterionTV, start_epoch, device, args, train_hist)
 
 
 

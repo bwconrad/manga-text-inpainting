@@ -139,10 +139,13 @@ def get_args():
     parser.add_argument('--use_l1_loss', dest='use_l1_loss', action='store_true', default=True, help='use L1 loss')
     parser.add_argument('--use_perceptual_loss', dest='use_perceptual_loss', action='store_true', default=False, help='use perceptual loss')
     parser.add_argument('--use_style_loss', dest='use_style_loss', action='store_true', default=False, help='use style loss')
+    parser.add_argument('--use_tv_loss', dest='use_tv_loss', action='store_true', default=False, help='use total variation loss')
     parser.add_argument('--lambda_gan', type=float, default=1, help='lambda for GAN loss')
     parser.add_argument('--lambda_l1', type=float, default=100, help='lambda for L1 loss')
     parser.add_argument('--lambda_perceptual', type=float, default=1, help='lambda for perceptual loss')
     parser.add_argument('--lambda_style', type=float, default=1, help='lambda for style loss')
+    parser.add_argument('--lambda_tv', type=float, default=1, help='lambda for total variation loss')
+
 
     # lr scheduler arguments
     parser.add_argument('--scheduler', default='none', help='learning rate schedule [linear | step | cosine | none]')
@@ -191,7 +194,7 @@ def save_checkpoint(state, epoch, save_path):
         os.makedirs(save_path)
     torch.save(state, save_path+'checkpoint_epoch{}.pth.tar'.format(epoch))
 
-def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, perceptual_losses, style_losses, train_hist):
+def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, perceptual_losses, style_losses, tv_losses, train_hist):
     # Save the average loss during the epoch
     avg_D_loss = np.mean(D_losses)
     train_hist['D_losses'].append(avg_D_loss)
@@ -208,22 +211,27 @@ def print_epoch_stats(epoch, start, end, D_losses, G_losses, L1_losses, perceptu
     avg_style_loss = np.mean(style_losses)
     train_hist['Style_losses'].append(avg_style_loss)
 
+    avg_tv_loss = np.mean(tv_losses)
+    train_hist['TV_losses'].append(avg_tv_loss)
+
+
     # Print epoch stats
     hours, minutes, seconds = calculate_time(start, end)
-    print("\nEpoch {} Completed in {}h {}m {:04.2f}s: D loss: {} G loss: {} L1 loss: {} Perceptual loss: {} Style loss: {}"
+    print("\nEpoch {} Completed in {}h {}m {:04.2f}s: D loss: {} G loss: {} L1 loss: {} Perceptual loss: {} Style loss: {} TV loss: {}"
               .format(epoch, hours, minutes, seconds, avg_D_loss, avg_G_loss, avg_L1_loss,
-                      avg_perceptual_loss, avg_style_loss))
+                      avg_perceptual_loss, avg_style_loss, avg_tv_loss))
 
 def save_plots(train_hist, save_path):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
+    x_range = np.arange(1, len(train_hist['G_losses'])+1)
+
     # GAN Loss
     plt.figure(figsize=(10,5))
     plt.title("GAN Losses")
-    plt.plot(train_hist['G_losses'], label="G")
-    plt.plot(train_hist['D_losses'], label="D")
-    plt.xlim(left=1)
+    plt.plot(x_range, train_hist['G_losses'], label="G")
+    plt.plot(x_range, train_hist['D_losses'], label="D")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
@@ -233,9 +241,8 @@ def save_plots(train_hist, save_path):
     # L1 Loss
     plt.figure(figsize=(10,5))
     plt.title("L1 Losses")
-    plt.plot(train_hist['L1_losses'],label="L1 Train")
-    plt.plot(train_hist['L1_val_losses'],label="L1 Validation")
-    plt.xlim(left=1)
+    plt.plot(x_range, train_hist['L1_losses'],label="L1 Train")
+    plt.plot(x_range, train_hist['L1_val_losses'],label="L1 Validation")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
@@ -245,8 +252,7 @@ def save_plots(train_hist, save_path):
     # Perceptual Loss
     plt.figure(figsize=(10,5))
     plt.title("Perceptual Losses")
-    plt.plot(train_hist['Perceptual_losses'],label="Perceptual")
-    plt.xlim(left=1)
+    plt.plot(x_range, train_hist['Perceptual_losses'],label="Perceptual")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
@@ -256,19 +262,27 @@ def save_plots(train_hist, save_path):
     # Style Loss
     plt.figure(figsize=(10,5))
     plt.title("Style Losses")
-    plt.plot(train_hist['Style_losses'],label="Style")
-    plt.xlim(left=1)
+    plt.plot(x_range, train_hist['Style_losses'],label="Style")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
     plt.savefig(save_path+'style_loss.png')
     plt.clf()
 
+    # Total Variation Loss
+    plt.figure(figsize=(10,5))
+    plt.title("Total Variation Losses")
+    plt.plot(x_range, train_hist['TV_losses'],label="TV")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(save_path+'tv_loss.png')
+    plt.clf()
+    
     # SSIM
     plt.figure(figsize=(10,5))
     plt.title("Validation SSIM")
-    plt.plot(train_hist['SSIM'],label="SSIM")
-    plt.xlim(left=1)
+    plt.plot(x_range, train_hist['SSIM'],label="SSIM")
     plt.xlabel("Epoch")
     plt.ylabel("SSIM")
     plt.legend()
@@ -278,12 +292,11 @@ def save_plots(train_hist, save_path):
     # PSRN
     plt.figure(figsize=(10,5))
     plt.title("Validation PSRN")
-    plt.plot(train_hist['PSRN'],label="PSRN")
-    plt.xlim(left=1)
+    plt.plot(x_range, train_hist['PSRN'],label="PSRN")
     plt.xlabel("Epoch")
     plt.ylabel("PSRN")
     plt.legend()
     plt.savefig(save_path+'psrn.png')
     plt.clf()
-
+    
 
