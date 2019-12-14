@@ -120,7 +120,7 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
             if (i+1)%args.batch_log_rate == 0:
                 print('[Epoch {}/{}, Batch {}/{}] L1 loss: {:.6f} Perceptual loss: {:.6f} Style loss: {:.12f} TV loss: {:.6f}'
                       .format(epoch, args.epochs, i+1, len(train_loader), np.mean(l1_losses), 
-                              np.mean(perceptual_losses), np.mean(style_losses, np.mean(tv_losses))))
+                              np.mean(perceptual_losses), np.mean(style_losses), np.mean(tv_losses)))
             
         # Save model
         save_checkpoint({'epoch': epoch,
