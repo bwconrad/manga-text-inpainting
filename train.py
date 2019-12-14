@@ -161,6 +161,8 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
     if args.archive:
         shutil.make_archive('images', 'zip', 'output/samples/')
         shutil.make_archive('checkpoints', 'zip', 'output/checkpoints/')
+        shutil.make_archive('plots', 'zip', 'output/plots/')
+
 
     hours, minutes, seconds = calculate_time(start, time.time())
     print('Training completed in {}h {}m {:04.2f}s'.format(hours, minutes, seconds))
