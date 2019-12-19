@@ -105,7 +105,6 @@ def get_args():
     parser.add_argument('--resume', default=None, help='checkpoint to resume training from')
 
     # Model arguments
-    #parser.add_argument('--generator', required=True, help='unet | ')
     parser.add_argument('--discriminator', required=True, help='pixel | patch | multi')
     parser.add_argument('--width', type=int, default=512, help='width of input')
     parser.add_argument('--height', type=int, default=1024, help='height of input') 
@@ -124,7 +123,8 @@ def get_args():
     parser.add_argument('--n_layers_d', type=int, default=3, help='# of layers in discriminator')
     parser.add_argument('--num_d', type=int, default=3, help='# of dicriminators in multiscale discriminator')
     parser.add_argument('--kernel_size_g', type=int, default=3, help='kernel width in encoder/decoder [3 | 4]')
-
+    parser.add_argument('--attention_g', dest='attention_g', action='store_true', default=False, help='use attention in the generator')
+    parser.add_argument('--attention_d', dest='attention_d', action='store_true', default=False, help='use attention in the discriminator')
 
     # Optimization arguments
     parser.add_argument('--epochs', type=int, default=1, help='number of training epochs')
@@ -174,10 +174,11 @@ def get_discriminator(args):
     if args.discriminator == 'pixel':
         return PixelDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer)
     elif args.discriminator == 'patch':
-        return PatchDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d, use_spectral_norm = args.spectral_norm_d)
+        return PatchDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d, use_spectral_norm = args.spectral_norm_d,
+                                  use_attention=args.attention_d)
     elif args.discriminator == 'multi':
         return MultiScaleDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, use_spectral_norm = args.spectral_norm_d, 
-                                       n_layers=args.n_layers_d, num_D=args.num_d)
+                                       n_layers=args.n_layers_d, num_D=args.num_d, use_attention=args.attention_d)
     else:
         raise NotImplementedError('discriminator [%s] is not implemented' % args.discriminator)
 

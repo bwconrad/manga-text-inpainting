@@ -1,7 +1,7 @@
 python main.py \
 --data_path ./data/ \
 --epochs 8 \
---batch_size 4 \
+--batch_size 1 \
 --ngf 32 \
 --ndf 32 \
 --gan_loss lsgan \
@@ -26,4 +26,6 @@ python main.py \
 --norm instance \
 --dilation 2 \
 --kernel_size_g 4 \
---spectral_norm_d 
+--spectral_norm_d \
+--attention_g \
+--attention_d

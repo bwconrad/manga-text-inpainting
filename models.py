@@ -54,13 +54,105 @@ class ResnetBlock(nn.Module):
         out = x + self.block(x)
         return out
 
+class LSTAResBlock(nn.Module):
+    '''
+    Resblock used in LSTA
+    https://github.com/YaN9-Y/lafin/blob/master/src/networks.py
+    '''
+    def __init__(self, input_nc, output_nc, hidden_nc=None, norm_layer=nn.BatchNorm2d, nonlinearity= nn.LeakyReLU(),
+                 sample_type='none', use_spect=False, use_coord=False):
+        super(LSTAResBlock, self).__init__()
+
+        hidden_nc = output_nc if hidden_nc is None else hidden_nc
+        self.sample = True
+        if sample_type == 'none':
+            self.sample = False
+        elif sample_type == 'up':
+            output_nc = output_nc * 4
+            self.pool = nn.PixelShuffle(upscale_factor=2)
+        elif sample_type == 'down':
+            self.pool = nn.AvgPool2d(kernel_size=2, stride=2)
+        else:
+            raise NotImplementedError('sample type [%s] is not found' % sample_type)
+
+        kwargs = {'kernel_size': 3, 'stride': 1, 'padding': 1}
+        kwargs_short = {'kernel_size': 1, 'stride': 1, 'padding': 0}
+
+        self.conv1 = spectral_norm(nn.Conv2d(input_nc, hidden_nc, **kwargs), use_spect)
+        self.conv2 = spectral_norm(nn.Conv2d(hidden_nc, output_nc, **kwargs), use_spect)
+        self.bypass = spectral_norm(nn.Conv2d(input_nc, output_nc, **kwargs_short), use_spect)
+
+        if type(norm_layer) == type(None):
+            self.model = nn.Sequential(nonlinearity, self.conv1, nonlinearity, self.conv2,)
+        else:
+            self.model = nn.Sequential(norm_layer(input_nc), nonlinearity, self.conv1, norm_layer(hidden_nc), nonlinearity, self.conv2,)
+
+        self.shortcut = nn.Sequential(self.bypass,)
+
+    def forward(self, x):
+        if self.sample:
+            out = self.pool(self.model(x)) + self.pool(self.shortcut(x))
+        else:
+            out = self.model(x) + self.shortcut(x)
+
+        return out
+
+class LSTA(nn.Module):
+    '''
+    Long Short Term Attention Module
+    https://arxiv.org/abs/1810.12752
+    https://github.com/YaN9-Y/lafin/blob/master/src/networks.py
+    '''
+    def __init__(self, input_nc, norm_layer = nn.InstanceNorm2d):
+        super(LSTA, self).__init__()
+        self.input_nc = input_nc
+
+        self.query_conv = nn.Conv2d(input_nc, input_nc // 4, kernel_size=1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+        self.alpha = nn.Parameter(torch.zeros(1))
+
+        self.softmax = nn.Softmax(dim=-1)
+
+        self.model = LSTAResBlock(int(input_nc*2), input_nc, input_nc, norm_layer=norm_layer, use_spect=True)
+
+    def forward(self, x, pre=None, mask=None):
+        '''
+        inputs :
+            x : input feature maps( B X C X W X H)
+        returns :
+            out : self attention value + input feature
+            attention: B X N X N (N is Width*Height)
+        '''
+        B, C, W, H = x.size()
+        proj_query = self.query_conv(x).view(B, -1, W * H)  # B X (N)X C
+        proj_key = proj_query  # B X C x (N)
+
+        energy = torch.bmm(proj_query.permute(0, 2, 1), proj_key)  # transpose check
+        attention = self.softmax(energy)  # BX (N) X (N)
+        proj_value = x.view(B, -1, W * H)  # B X C X N
+
+        out = torch.bmm(proj_value, attention.permute(0, 2, 1))
+        out = out.view(B, C, W, H)
+
+        out = self.gamma * out + x
+
+        if type(pre) != type(None):
+            # using long distance attention layer to copy information from valid regions
+            context_flow = torch.bmm(pre.view(B, -1, W*H), attention.permute(0, 2, 1)).view(B, -1, W, H)
+            context_flow = self.alpha * (mask) * context_flow + (1-mask) * pre
+            out = self.model(torch.cat([out, context_flow], dim=1))
+
+        return out
+        #return out, attention
+
 class GlobalGenerator(nn.Module):
     def __init__(self, input_nc, output_nc, ngf=64, n_downsampling=3, n_blocks=9, norm_layer=nn.BatchNorm2d, 
-                 padding_type='reflect', use_dropout=False, use_spectral_norm=False, dilation=1, kernel_size=3):
+                 use_dropout=False, use_spectral_norm=False, dilation=1, kernel_size=3):
         assert(n_blocks >= 0)
         super(GlobalGenerator, self).__init__()        
         activation = nn.ReLU(True)        
-
+        
+        
         model = [nn.ReflectionPad2d(3), 
                  spectral_norm(nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0), use_spectral_norm), 
                  norm_layer(ngf), 
@@ -76,7 +168,7 @@ class GlobalGenerator(nn.Module):
         # Resblocks
         mult = 2**n_downsampling
         for i in range(n_blocks):
-            model += [ResnetBlock(ngf * mult, padding_type=padding_type, activation=activation, norm_layer=norm_layer,
+            model += [ResnetBlock(ngf * mult, padding_type='reflect', activation=activation, norm_layer=norm_layer,
                                   use_dropout=use_dropout, use_spectral_norm = use_spectral_norm, dilation=dilation)]
         
         # Decoder        
@@ -92,26 +184,98 @@ class GlobalGenerator(nn.Module):
                   nn.Tanh()] 
 
         self.model = nn.Sequential(*model)
+        
             
     def forward(self, input):
         return self.model(input) 
-                               
+    
+class AttentionGenerator(nn.Module):
+    def __init__(self, input_nc, output_nc, ngf=64, n_blocks=7, norm_layer=nn.BatchNorm2d,
+                 use_dropout=False, use_spectral_norm=False, dilation=1, kernel_size=3):
+        super(AttentionGenerator, self).__init__()
+
+        self.encoder1 = nn.Sequential(
+            nn.ReflectionPad2d(3),
+            nn.Conv2d(in_channels=input_nc, out_channels=ngf, kernel_size=7, padding=0),
+            nn.InstanceNorm2d(64, track_running_stats=False),
+            nn.ReLU(True))
+
+        self.encoder2 = nn.Sequential(
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(128, track_running_stats=False),
+            nn.ReLU(True),
+        )
+
+        self.encoder3 = nn.Sequential(
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(256, track_running_stats=False),
+            nn.ReLU(True)
+        )
+
+        self.fushion1 = nn.Sequential(
+            nn.Conv2d(in_channels=256,out_channels=256,kernel_size=1),
+            nn.InstanceNorm2d(256,track_running_stats=False),
+            nn.ReLU(True)
+        )
+
+        self.fushion2 = nn.Sequential(
+            nn.Conv2d(in_channels=128,out_channels=128,kernel_size=1),
+            nn.InstanceNorm2d(128,track_running_stats=False),
+            nn.ReLU(True)
+        )
+
+        self.decoder1 = nn.Sequential(
+            nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(128, track_running_stats=False),
+            nn.ReLU(True),
+        )
+
+        self.decoder2 = nn.Sequential(
+            nn.ConvTranspose2d(in_channels=256, out_channels=64, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(64, track_running_stats=False),
+            nn.ReLU(True),
+        )
+
+        self.decoder3 = nn.Sequential(
+            nn.ReflectionPad2d(3),
+            nn.Conv2d(in_channels=128, out_channels=3, kernel_size=7, padding=0),
+        )
+
+        blocks = []
+        for _ in range(residual_blocks):
+            block = ResnetBlock(256, 2)
+            blocks.append(block)
+
+        self.middle = nn.Sequential(*blocks)
+
+        self.auto_attn = Auto_Attn(input_nc=256, norm_layer=None)
+
+        if init_weights:
+            self.init_weights()
+
 class PatchDiscriminator(nn.Module):
-    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, use_spectral_norm=False):
+    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, use_spectral_norm=False, use_attention=False):
         super(PatchDiscriminator, self).__init__()
 
         model = [spectral_norm(nn.Conv2d(input_nc, ndf, kernel_size=4, stride=2, padding=1, bias= not use_spectral_norm), use_spectral_norm),
-                 nn.LeakyReLU(0.2, True)]
+                 nn.LeakyReLU(0.2, True),
+                 spectral_norm(nn.Conv2d(ndf, ndf*2, kernel_size=4, stride=2, padding=1, bias= not use_spectral_norm), use_spectral_norm),
+                 nn.LeakyReLU(0.2, True),]
 
-        nf_mult = 1
+        # Add LSTA attention
+        if use_attention:
+            model += [LSTA(ndf*2, norm_layer=None)]
+
+        nf_mult = 2
         nf_mult_prev = 1
-        for i in range(1, n_layers):
+        for i in range(2, n_layers):
             nf_mult_prev = nf_mult
             nf_mult = min(2**i, 8)
             model += [spectral_norm(nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
                       norm_layer(ndf * nf_mult),
                       nn.LeakyReLU(0.2, True)]
 
+        # Add stride=1 layer
         nf_mult_prev = nf_mult
         nf_mult = min(2**n_layers, 8)
         model += [spectral_norm(nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm),
@@ -151,13 +315,14 @@ class PixelDiscriminator(nn.Module):
         return self.model(inp)
 
 class MultiScaleDiscriminator(nn.Module):
-    def __init__(self, input_nc, ndf=64, n_layers=3, num_D=3, norm_layer=nn.BatchNorm2d, use_spectral_norm=False):
+    def __init__(self, input_nc, ndf=64, n_layers=3, num_D=3, norm_layer=nn.BatchNorm2d, use_spectral_norm=False, use_attention=False):
         super(MultiScaleDiscriminator, self).__init__()
         self.num_D = num_D
         self.n_layers = n_layers
 
         for i in range(num_D):
-            netD = PatchDiscriminator(input_nc=input_nc, ndf=ndf, n_layers=n_layers, norm_layer=norm_layer, use_spectral_norm=use_spectral_norm)
+            netD = PatchDiscriminator(input_nc=input_nc, ndf=ndf, n_layers=n_layers, norm_layer=norm_layer, use_spectral_norm=use_spectral_norm,
+                                      use_attention=use_attention)
             setattr(self, 'layer'+str(i), netD.model)
 
         self.downsample = nn.AvgPool2d(3, stride=2, padding=1, count_include_pad=False)
