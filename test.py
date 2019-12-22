@@ -4,7 +4,7 @@ import numpy as np
 from imageio import imsave
 import os
 
-from metrics.ssim import ssim
+from metrics import ssim
 
 
 def test(netG, loader, device, save_batches=0, save_path=None):

@@ -27,5 +27,3 @@ python main.py \
 --dilation 2 \
 --kernel_size_g 4 \
 --spectral_norm_d \
---attention_g \
---attention_d

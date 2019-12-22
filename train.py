@@ -159,9 +159,9 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
             update_learning_rate([schedulerG, schedulerD], args.scheduler)
 
     if args.archive:
-        shutil.make_archive('images', 'zip', 'output/samples/')
-        shutil.make_archive('checkpoints', 'zip', 'output/checkpoints/')
-        shutil.make_archive('plots', 'zip', 'output/plots/')
+        shutil.make_archive('images', 'zip', args.save_samples_path)
+        shutil.make_archive('checkpoints', 'zip', args.checkpoint_path)
+        shutil.make_archive('plots', 'zip', args.plot_path)
 
 
     hours, minutes, seconds = calculate_time(start, time.time())
