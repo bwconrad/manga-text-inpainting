@@ -17,20 +17,20 @@ args = get_args()
 print('Loading data...')
 train_dataset = EdgeMangaDataset(args.data_path + 'train/', 'train.csv', height=args.height, width=args.width)
 val_dataset = EdgeMangaDataset(args.data_path + 'val/', 'val.csv', height=args.height, width=args.width)
-test_dataset = EdgeMangaDataset(args.data_path + 'test/', 'test.csv', height=args.height, width=args.width)
+#test_dataset = EdgeMangaDataset(args.data_path + 'test/', 'test.csv', height=args.height, width=args.width)
 
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
 val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
+#test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
 
 # Setup models
 print('\nInitializing models...')
 
-netG = EdgeGenerator(residual_blocks=args.n_blocks_g, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation)
+netG = EdgeGenerator(ngf=args.ngf, residual_blocks=args.n_blocks_g, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation)
 netG.to(device)
 init_weights(netG, args.init_type, init_gain=args.init_gain)
 
-netD = Discriminator(in_channels=3, use_sigmoid=args.gan_loss != 'lsgan', use_spectral_norm=args.spectral_norm_d)
+netD = Discriminator(in_channels=3, ndf=args.ndf, use_sigmoid=args.gan_loss != 'lsgan', use_spectral_norm=args.spectral_norm_d)
 netD.to(device)
 init_weights(netD, args.init_type, init_gain=args.init_gain)
 

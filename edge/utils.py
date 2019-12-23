@@ -34,6 +34,9 @@ def get_args():
     parser.add_argument('--spectral_norm_g', dest='spectral_norm_g', action='store_true', default=True, help='use spectral normalization in generator')
     parser.add_argument('--spectral_norm_d', dest='spectral_norm_d', action='store_true', default=True, help='use spectral normalization in discriminator')
     parser.add_argument('--dilation', type=int, default=2, help='amount of dilation')
+    parser.add_argument('--ngf', type=int, default=64, help='# of feature channels in generator first layer')
+    parser.add_argument('--ndf', type=int, default=64, help='# of feature channels in discriminator first layer')
+
 
     # Optimization arguments
     parser.add_argument('--epochs', type=int, default=1, help='number of training epochs')

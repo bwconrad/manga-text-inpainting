@@ -2,7 +2,7 @@ python main.py \
 --data_path ../data/ \
 --epochs 1 \
 --batch_size 4 \
---gan_loss lsgan \
+--gan_loss vanilla \
 --scheduler none \
 --use_fm_loss \
 --lambda_gan 1 \
@@ -16,4 +16,6 @@ python main.py \
 --dilation 2 \
 --spectral_norm_d \
 --spectral_norm_g \
+--ngf 32 \
+--ndf 32
 

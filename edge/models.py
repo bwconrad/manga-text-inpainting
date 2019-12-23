@@ -30,42 +30,42 @@ class ResnetBlock(nn.Module):
         return out
 
 class EdgeGenerator(nn.Module):
-    def __init__(self, residual_blocks=8, dilation=2, use_spectral_norm=True):
+    def __init__(self, ngf=64, residual_blocks=8, dilation=2, use_spectral_norm=True):
         super(EdgeGenerator, self).__init__()
 
         self.encoder = nn.Sequential(
             nn.ReflectionPad2d(3),
-            spectral_norm(nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, padding=0), use_spectral_norm),
-            nn.InstanceNorm2d(64, track_running_stats=False),
+            spectral_norm(nn.Conv2d(in_channels=3, out_channels=ngf, kernel_size=7, padding=0), use_spectral_norm),
+            nn.InstanceNorm2d(ngf, track_running_stats=False),
             nn.ReLU(True),
 
-            spectral_norm(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1), use_spectral_norm),
-            nn.InstanceNorm2d(128, track_running_stats=False),
+            spectral_norm(nn.Conv2d(in_channels=ngf, out_channels=ngf*2, kernel_size=4, stride=2, padding=1), use_spectral_norm),
+            nn.InstanceNorm2d(ngf*2, track_running_stats=False),
             nn.ReLU(True),
 
-            spectral_norm(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1), use_spectral_norm),
+            spectral_norm(nn.Conv2d(in_channels=ngf*2, out_channels=ngf*4, kernel_size=4, stride=2, padding=1), use_spectral_norm),
             nn.InstanceNorm2d(256, track_running_stats=False),
             nn.ReLU(True)
         )
 
         blocks = []
         for _ in range(residual_blocks):
-            block = ResnetBlock(256, dilation=dilation, use_spectral_norm=use_spectral_norm)
+            block = ResnetBlock(ngf*4, dilation=dilation, use_spectral_norm=use_spectral_norm)
             blocks.append(block)
 
         self.middle = nn.Sequential(*blocks)
 
         self.decoder = nn.Sequential(
-            spectral_norm(nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=4, stride=2, padding=1), use_spectral_norm),
-            nn.InstanceNorm2d(128, track_running_stats=False),
+            spectral_norm(nn.ConvTranspose2d(in_channels=ngf*4, out_channels=ngf*2, kernel_size=4, stride=2, padding=1), use_spectral_norm),
+            nn.InstanceNorm2d(ngf*2, track_running_stats=False),
             nn.ReLU(True),
 
-            spectral_norm(nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1), use_spectral_norm),
-            nn.InstanceNorm2d(64, track_running_stats=False),
+            spectral_norm(nn.ConvTranspose2d(in_channels=ngf*2, out_channels=ngf, kernel_size=4, stride=2, padding=1), use_spectral_norm),
+            nn.InstanceNorm2d(ngf, track_running_stats=False),
             nn.ReLU(True),
 
             nn.ReflectionPad2d(3),
-            nn.Conv2d(in_channels=64, out_channels=1, kernel_size=7, padding=0),
+            nn.Conv2d(in_channels=ngf, out_channels=1, kernel_size=7, padding=0),
         )
 
     def forward(self, x):
@@ -77,32 +77,32 @@ class EdgeGenerator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, in_channels, use_sigmoid=True, use_spectral_norm=True):
+    def __init__(self, in_channels, ndf=64, use_sigmoid=True, use_spectral_norm=True):
         super(Discriminator, self).__init__()
         self.use_sigmoid = use_sigmoid
 
         self.conv1 = self.features = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
+            spectral_norm(nn.Conv2d(in_channels=in_channels, out_channels=ndf, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
             nn.LeakyReLU(0.2, inplace=True),
         )
 
         self.conv2 = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
+            spectral_norm(nn.Conv2d(in_channels=ndf, out_channels=ndf*2, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
             nn.LeakyReLU(0.2, inplace=True),
         )
 
         self.conv3 = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
+            spectral_norm(nn.Conv2d(in_channels=ndf*2, out_channels=ndf*4, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
             nn.LeakyReLU(0.2, inplace=True),
         )
 
         self.conv4 = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm),
+            spectral_norm(nn.Conv2d(in_channels=ndf*4, out_channels=ndf*8, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm),
             nn.LeakyReLU(0.2, inplace=True),
         )
 
         self.conv5 = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_channels=512, out_channels=1, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm),
+            spectral_norm(nn.Conv2d(in_channels=ndf*8, out_channels=1, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm),
         )
 
     def forward(self, x):
