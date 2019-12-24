@@ -84,8 +84,8 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             
             # Feature matching loss 
             g_loss_fm = 0
-            for i in range(len(dis_real_features)):
-                g_loss_fm += criterionFM(gen_fake_features[i], dis_real_features[i].detach())
+            for j in range(len(dis_real_features)):
+                g_loss_fm += criterionFM(gen_fake_features[j], dis_real_features[j].detach())
 
             # Combined loss
             g_loss = (g_loss_gan * args.lambda_gan) + (g_loss_fm * args.lambda_fm)

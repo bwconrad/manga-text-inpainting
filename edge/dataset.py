@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw
 import numpy as np
 import pandas as pd
 import ast
+from skimage import feature, img_as_float
 
 def default_loader(path):
     return Image.open(path).convert('L')
@@ -49,16 +50,12 @@ class EdgeMangaDataset(data.Dataset):
         # Load the dirty image
         dirty_path = self.root + 'dirty/' + self.imgs[index]
         dirty_img = self.loader(dirty_path)
+        clean_path = self.root + 'clean/' + self.imgs[index]
+        clean_img = self.loader(clean_path)
 
         # Create the mask
         bboxes = self.bboxes[index]
         mask = self.create_mask(bboxes, dirty_img.size[0], dirty_img.size[1]) # Create mask of text locations
-
-        # Load the edges
-        edge_input_path = self.root + 'edge_inputs/' + self.imgs[index]
-        edge_input = self.loader(edge_input_path)
-        edge_target_path = self.root + 'edge_targets/' + self.imgs[index]
-        edge_target = self.loader(edge_target_path)
 
         assert(dirty_img.size[0] < dirty_img.size[1]) # Make sure portrait image
 
@@ -66,28 +63,22 @@ class EdgeMangaDataset(data.Dataset):
         if dirty_img.size[1] > 2*dirty_img.size[0]:
             # Pad width
             dw = (dirty_img.size[1] - 2*dirty_img.size[0]) / 2
+            clean_img = transforms.functional.pad(clean_img, padding=(int(np.floor(dw)), 0,
+                                                                      int(np.ceil(dw)), 0))
             dirty_img = transforms.functional.pad(dirty_img, padding=(int(np.floor(dw)), 0,
                                                                       int(np.ceil(dw)), 0))
             mask = transforms.functional.pad(mask, padding=(int(np.floor(dw)), 0,
-                                                            int(np.ceil(dw)), 0))
-            edge_input = transforms.functional.pad(edge_input, padding=(int(np.floor(dw)), 0,
-                                                                        int(np.ceil(dw)), 0))
-            edge_target = transforms.functional.pad(edge_target, padding=(int(np.floor(dw)), 0,
-                                                                          int(np.ceil(dw)), 0))
-            
+                                                            int(np.ceil(dw)), 0))  
             
         elif dirty_img.size[1] < 2*dirty_img.size[0]:
             # Pad height
             dh = (2*dirty_img.size[0] - dirty_img.size[1]) / 2
+            clean_img = transforms.functional.pad(clean_img, padding=(0, int(np.floor(dh)), 
+                                                                      0, int(np.ceil(dh))))
             dirty_img = transforms.functional.pad(dirty_img, padding=(0, int(np.floor(dh)), 
                                                                       0, int(np.ceil(dh))))
             mask = transforms.functional.pad(mask, padding=(0, int(np.floor(dh)), 
                                                             0, int(np.ceil(dh))))
-            edge_input = transforms.functional.pad(edge_input, padding=(0, int(np.floor(dh)), 
-                                                                        0, int(np.ceil(dh))))
-            edge_target = transforms.functional.pad(edge_target, padding=(0, int(np.floor(dh)), 
-                                                                          0, int(np.ceil(dh))))
-
 
         # Apply transforms
         dirty_img = self.resize(dirty_img)
@@ -97,13 +88,14 @@ class EdgeMangaDataset(data.Dataset):
         mask = self.mask_resize(mask)
         mask = self.tensor(mask)
 
-        edge_input = self.mask_resize(edge_input)
-        edge_input = self.tensor(edge_input)
-
-        edge_target = self.mask_resize(edge_target)
-        edge_target  = self.tensor(edge_target)
-
-
+        # Create edge map from clean image
+        edge_target = self.resize(clean_img)
+        edge_target = np.array(edge_target)
+        edge_target = img_as_float(edge_target)
+        edge_target = feature.canny(edge_target, sigma=2) 
+        edge_target = self.tensor(edge_target)
+        edge_input = edge_target * (1-mask)
+        
         return dirty_img, mask, edge_input, edge_target
 
     def __len__(self):

@@ -1,7 +1,7 @@
 python main.py \
 --data_path ../data/ \
---epochs 1 \
---batch_size 4 \
+--epochs 16 \
+--batch_size 8 \
 --gan_loss vanilla \
 --scheduler none \
 --use_fm_loss \
@@ -17,5 +17,6 @@ python main.py \
 --spectral_norm_d \
 --spectral_norm_g \
 --ngf 32 \
---ndf 32
+--ndf 32 \
+--resume ./output/checkpoints/checkpoint_epoch8.pth.tar
 
