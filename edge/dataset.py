@@ -93,7 +93,7 @@ class EdgeMangaDataset(data.Dataset):
         edge_target = np.array(edge_target)
         edge_target = img_as_float(edge_target)
         edge_target = feature.canny(edge_target, sigma=2) 
-        edge_target = self.tensor(edge_target)
+        edge_target = self.tensor(edge_target).float()
         edge_input = edge_target * (1-mask)
         
         return dirty_img, mask, edge_input, edge_target
