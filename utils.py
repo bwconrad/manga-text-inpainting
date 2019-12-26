@@ -125,6 +125,8 @@ def get_args():
     parser.add_argument('--kernel_size_g', type=int, default=3, help='kernel width in encoder/decoder [3 | 4]')
     parser.add_argument('--attention_g', dest='attention_g', action='store_true', default=False, help='use attention in the generator')
     parser.add_argument('--attention_d', dest='attention_d', action='store_true', default=False, help='use attention in the discriminator')
+    parser.add_argument('--edges', dest='edges', action='store_true', default=False, help='use edge map')
+
 
     # Optimization arguments
     parser.add_argument('--epochs', type=int, default=1, help='number of training epochs')
@@ -145,7 +147,6 @@ def get_args():
     parser.add_argument('--lambda_perceptual', type=float, default=1, help='lambda for perceptual loss')
     parser.add_argument('--lambda_style', type=float, default=1, help='lambda for style loss')
     parser.add_argument('--lambda_tv', type=float, default=1, help='lambda for total variation loss')
-
 
     # lr scheduler arguments
     parser.add_argument('--scheduler', default='none', help='learning rate schedule [linear | step | cosine | none]')
@@ -172,12 +173,12 @@ def get_discriminator(args):
     norm_layer = get_norm_layer(args.norm)
 
     if args.discriminator == 'pixel':
-        return PixelDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer)
+        return PixelDiscriminator(input_nc=2 if not args.edges else 3, ndf=args.ndf, norm_layer=norm_layer)
     elif args.discriminator == 'patch':
-        return PatchDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d, use_spectral_norm = args.spectral_norm_d,
+        return PatchDiscriminator(input_nc=2 if not args.edges else 3, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d, use_spectral_norm = args.spectral_norm_d,
                                   use_attention=args.attention_d)
     elif args.discriminator == 'multi':
-        return MultiScaleDiscriminator(input_nc=2, ndf=args.ndf, norm_layer=norm_layer, use_spectral_norm = args.spectral_norm_d, 
+        return MultiScaleDiscriminator(input_nc=2 if not args.edges else 3, ndf=args.ndf, norm_layer=norm_layer, use_spectral_norm = args.spectral_norm_d, 
                                        n_layers=args.n_layers_d, num_D=args.num_d, use_attention=args.attention_d)
     else:
         raise NotImplementedError('discriminator [%s] is not implemented' % args.discriminator)

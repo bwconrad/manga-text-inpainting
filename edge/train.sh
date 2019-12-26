@@ -18,5 +18,4 @@ python main.py \
 --spectral_norm_g \
 --ngf 32 \
 --ndf 32 \
---resume ./output/checkpoints/checkpoint_epoch8.pth.tar
 

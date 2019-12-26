@@ -63,7 +63,7 @@ def get_args():
     parser.add_argument('--batch_log_rate', type=int, default=50, help='update on training every number of batches')
     parser.add_argument('--save_samples_rate', type=int, default=1, help='save samples every number of epochs')
     parser.add_argument('--save_samples_batches', type=int, default=4, help='number of sample batches to save')
-    parser.add_argument('--archive', dest='archive', action='store_true', default=False, help='save samples and checkpoints as archive')
+    parser.add_argument('--archive', dest='archive', action='store_true', default=False, help='save samples and checkpoints as archives')
 
 
     args = parser.parse_args()

@@ -48,9 +48,10 @@ class EdgeMangaDataset(data.Dataset):
 
     def __getitem__(self, index):
         # Load the dirty image
-        dirty_path = self.root + 'dirty/' + self.imgs[index]
+        name = self.imgs[index]
+        dirty_path = self.root + 'dirty/' + name
         dirty_img = self.loader(dirty_path)
-        clean_path = self.root + 'clean/' + self.imgs[index]
+        clean_path = self.root + 'clean/' + name
         clean_img = self.loader(clean_path)
 
         # Create the mask
@@ -96,7 +97,7 @@ class EdgeMangaDataset(data.Dataset):
         edge_target = self.tensor(edge_target).float()
         edge_input = edge_target * (1-mask)
         
-        return dirty_img, mask, edge_input, edge_target
+        return dirty_img, mask, edge_input, edge_target, name
 
     def __len__(self):
         return len(self.imgs)

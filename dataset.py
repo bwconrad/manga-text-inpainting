@@ -10,7 +10,7 @@ def default_loader(path):
     return Image.open(path).convert('L')
 
 class MangaDataset(data.Dataset):
-    def __init__(self, data_root, ann_file, height=1024, width=512):
+    def __init__(self, data_root, ann_file, height=1024, width=512, edges=False):
         # Load annotations
         print('Loading Annotations from {}'.format(ann_file))
         ann = pd.read_csv(data_root + ann_file)
@@ -22,6 +22,7 @@ class MangaDataset(data.Dataset):
         
         self.root = data_root
         self.loader = default_loader
+        self.edges = edges
 
         # Transformation parameters
         self.mean = [0.5]
@@ -91,7 +92,13 @@ class MangaDataset(data.Dataset):
         mask = self.mask_resize(mask)
         mask = self.tensor(mask)
 
-        return dirty_img, clean_img, mask
+        edge = torch.Tensor()
+        if self.edges:
+            edge_path = self.root + 'edges/' + self.imgs[index]
+            edge = self.loader(edge_path)
+            edge = self.tensor(edge)
+
+        return dirty_img, clean_img, mask, edge
 
     def __len__(self):
         return len(self.imgs)

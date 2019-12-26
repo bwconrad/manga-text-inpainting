@@ -17,9 +17,9 @@ args = get_args()
 
 # Load data
 print('Loading data...')
-train_dataset = MangaDataset(args.data_path + 'train/', 'train.csv', height=args.height, width=args.width)
-val_dataset = MangaDataset(args.data_path + 'val/', 'val.csv', height=args.height, width=args.width)
-test_dataset = MangaDataset(args.data_path + 'test/', 'test.csv', height=args.height, width=args.width)
+train_dataset = MangaDataset(args.data_path + 'train/', 'train.csv', height=args.height, width=args.width, edges=args.edges)
+val_dataset = MangaDataset(args.data_path + 'val/', 'val.csv', height=args.height, width=args.width, edges=args.edges)
+test_dataset = MangaDataset(args.data_path + 'test/', 'test.csv', height=args.height, width=args.width, edges=args.edges)
 
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
 val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
@@ -28,7 +28,7 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_si
 # Setup models
 print('\nInitializing models...')
 norm_layer = get_norm_layer(args.norm)
-netG = GlobalGenerator(input_nc=2, output_nc=1, n_downsampling=args.n_downsamples_g, n_blocks=args.n_blocks_g, ngf=args.ngf, norm_layer=norm_layer,
+netG = GlobalGenerator(input_nc=2 if not args.edges else 3, output_nc=1, n_downsampling=args.n_downsamples_g, n_blocks=args.n_blocks_g, ngf=args.ngf, norm_layer=norm_layer,
                        use_dropout=args.dropout, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation, kernel_size=args.kernel_size_g)
 netG.to(device)
 init_weights(netG, args.init_type, init_gain=args.init_gain)

@@ -18,7 +18,7 @@ def test(netG, loader, device, save_batches=0, save_path=None):
         save_images_outputs = []
 
         # Measure psrn and ssim on entire val set
-        for i, (images, masks, edge_inputs, edge_targets) in enumerate(loader):
+        for i, (images, masks, edge_inputs, edge_targets, _) in enumerate(loader):
             images, masks, edge_inputs, edge_targets = images.to(device), masks.to(device), edge_inputs.to(device), edge_targets.to(device)
             
             # Pass images through generator
