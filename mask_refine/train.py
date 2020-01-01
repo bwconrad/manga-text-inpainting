@@ -101,7 +101,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             if (i+1)%args.batch_log_rate == 0:
                 print('[Epoch {}/{}, Batch {}/{}] FM loss: {}'
                       .format(epoch, args.epochs, i+1, len(train_loader), np.mean(fm_losses)))
-            break
+            
         # Save model
         save_checkpoint({'epoch': epoch,
                          'G_state_dict': netG.state_dict(),
