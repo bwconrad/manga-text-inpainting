@@ -26,13 +26,14 @@ def update_learning_rate(schedulers, type):
 
 
 def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-              schedulerG, schedulerD, criterionGAN, criterionFM, start_epoch, 
-              device, args, train_hist=None):
+              schedulerG, schedulerD, criterionGAN, criterionFM, criterionT, 
+              start_epoch, device, args, train_hist=None):
     
     if not train_hist:
         train_hist = {'D_losses': [], 
                       'G_losses': [], 
                       'FM_losses': [],
+                      'T_losses': [],
                       'Precision': [], 
                       'Recall': [],
                       'FM_val_losses': []}
@@ -48,6 +49,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
         G_losses = [] 
         D_losses = []
         fm_losses = []
+        t_losses = []
         
         for i, (images, masks, text_masks, _) in enumerate(train_loader):
             images, masks, text_masks = images.to(device), masks.to(device), text_masks.to(device)
@@ -85,10 +87,13 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             # Feature matching loss 
             g_loss_fm = 0
             for j in range(len(dis_real_features)):
-                g_loss_fm += criterionFM(gen_fake_features[j], dis_real_features[j].detach())
+                g_loss_fm += criterionFM(gen_fake_features[j], dis_real_features[j].detach()) if criterionFM else torch.tensor(0).float()
+
+            # Tversky loss
+            g_loss_t = criterionT(fake_text_mask_outputs, text_masks)
 
             # Combined loss
-            g_loss = (g_loss_gan * args.lambda_gan) + (g_loss_fm * args.lambda_fm)
+            g_loss = (g_loss_gan * args.lambda_gan) + (g_loss_fm * args.lambda_fm) + (g_loss_t * args.lambda_t)
 
             g_loss.backward()
             optimizerG.step()
@@ -97,10 +102,12 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             D_losses.append(d_loss.detach().item())
             G_losses.append(g_loss_gan.detach().item())
             fm_losses.append(g_loss_fm.detach().item())
+            t_losses.append(g_loss_t.detach().item())
+
 
             if (i+1)%args.batch_log_rate == 0:
-                print('[Epoch {}/{}, Batch {}/{}] FM loss: {}'
-                      .format(epoch, args.epochs, i+1, len(train_loader), np.mean(fm_losses)))
+                print('[Epoch {}/{}, Batch {}/{}] FM loss: {}, Tversky loss: {}'
+                      .format(epoch, args.epochs, i+1, len(train_loader), np.mean(fm_losses), np.mean(t_losses)))
             
         # Save model
         save_checkpoint({'epoch': epoch,
@@ -115,7 +122,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
                         }, epoch, args.checkpoint_path)
 
         # Print epoch information
-        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, fm_losses, train_hist)
+        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, fm_losses, t_losses, train_hist)
 
         # Evaluate on validation set
         print('Evaluating on validation set...')

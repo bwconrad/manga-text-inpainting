@@ -48,9 +48,14 @@ def get_args():
     parser.add_argument('--workers', type=int, help='number of workers', default=6) 
 
     # Loss functions arguments
-    parser.add_argument('--use_fm_loss', dest='use_fm_loss', action='store_true', default=True, help='use feature matching loss')
+    parser.add_argument('--use_fm_loss', dest='use_fm_loss', action='store_true', default=False, help='use feature matching loss')
+    parser.add_argument('--use_t_loss', dest='use_t_loss', action='store_true', default=False, help='use Tversky loss')
     parser.add_argument('--lambda_gan', type=float, default=1, help='lambda for GAN loss')
     parser.add_argument('--lambda_fm', type=float, default=10, help='lambda for feature matching loss')
+    parser.add_argument('--lambda_t', type=float, default=10, help='lambda for tversky loss')
+    parser.add_argument('--t_alpha', type=float, default=0.1, help='alpha for tversky loss')
+    parser.add_argument('--t_beta', type=float, default=0.9, help='beta for tversky loss')
+    
     
     # lr scheduler arguments
     parser.add_argument('--scheduler', default='none', help='learning rate schedule [linear | step | cosine | none]')
@@ -154,7 +159,7 @@ def save_checkpoint(state, epoch, save_path):
         os.makedirs(save_path)
     torch.save(state, save_path+'checkpoint_epoch{}.pth.tar'.format(epoch))
 
-def print_epoch_stats(epoch, start, end, D_losses, G_losses, fm_losses, train_hist):
+def print_epoch_stats(epoch, start, end, D_losses, G_losses, fm_losses, t_losses, train_hist):
     # Save the average loss during the epoch
     avg_D_loss = np.mean(D_losses)
     train_hist['D_losses'].append(avg_D_loss)
@@ -165,10 +170,14 @@ def print_epoch_stats(epoch, start, end, D_losses, G_losses, fm_losses, train_hi
     avg_fm_loss = np.mean(fm_losses)
     train_hist['FM_losses'].append(avg_fm_loss)
 
+    avg_t_loss = np.mean(t_losses)
+    train_hist['T_losses'].append(avg_t_loss)
+
+
     # Print epoch stats
     hours, minutes, seconds = calculate_time(start, end)
-    print("\nEpoch {} Completed in {}h {}m {:04.2f}s: D loss: {} G loss: {} FM loss: {}"
-              .format(epoch, hours, minutes, seconds, avg_D_loss, avg_G_loss, avg_fm_loss))
+    print("\nEpoch {} Completed in {}h {}m {:04.2f}s: D loss: {} G loss: {} FM loss: {} Tversky loss: {}"
+              .format(epoch, hours, minutes, seconds, avg_D_loss, avg_G_loss, avg_fm_loss, avg_t_loss))
 
 def save_plots(train_hist, save_path):
     if not os.path.exists(save_path):
@@ -197,6 +206,16 @@ def save_plots(train_hist, save_path):
     plt.savefig(save_path+'fm_loss.png')
     plt.clf()
     
+    # Tversky Loss
+    plt.figure(figsize=(10,5))
+    plt.title("Tversky Losses")
+    plt.plot(x_range, train_hist['T_losses'],label="T")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(save_path+'tversky_loss.png')
+    plt.clf()
+
     # Precision
     plt.figure(figsize=(10,5))
     plt.title("Validation Precision")

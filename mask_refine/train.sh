@@ -4,9 +4,11 @@ python main.py \
 --batch_size 8 \
 --gan_loss vanilla \
 --scheduler none \
---use_fm_loss \
+--use_t_loss \
 --lambda_gan 1 \
---lambda_fm 10 \
+--lambda_t 10 \
+--t_alpha 0.1 \
+--t_beta 0.9 \
 --width 256 \
 --height 512 \
 --lrG 0.0001 \
