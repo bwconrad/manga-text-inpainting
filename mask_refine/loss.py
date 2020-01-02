@@ -36,24 +36,23 @@ class GANLoss(nn.Module):
             loss = self.criterion(outputs, labels)
             return loss
 
-class TLoss(nn.Module):
+class TverskyLoss(nn.Module):
     '''
     Tversky loss
+    https://arxiv.org/pdf/1706.05721.pdf
     '''
 
-    def __init__(self, alpha, beta, threshold=0.5, eps=1e-8):
+    def __init__(self, alpha, beta, eps=1e-8):
         '''
         Inputs:
             - alpha: false positive penalty
             - beta: false negative penalty
-            - threshold: min val to consider a positive (round up from threshold)
             - eps: add to demon for stability
         '''
-        super(TLoss, self).__init__()
+        super(TverskyLoss, self).__init__()
 
         self.alpha = alpha
         self.beta = beta
-        self.threshold = threshold
         self.eps = eps
 
     def __call__(self, predictions, targets):

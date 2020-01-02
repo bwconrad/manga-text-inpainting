@@ -6,8 +6,8 @@ import sys
 from utils import *
 from dataset import MaskRefineDataset
 from models import Generator, Discriminator
-from loss import GANLoss, TLoss
-from train import train_gan
+from loss import GANLoss, TverskyLoss
+from train import train_gan, train
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 cudnn.benchmark = True
@@ -68,7 +68,7 @@ if args.resume:
 # Define loss functions
 criterionGAN = GANLoss(args.gan_loss).to(device)
 criterionFM = torch.nn.L1Loss() if args.use_fm_loss else None
-criterionT = TLoss(alpha=args.t_alpha, beta=args.t_beta) if args.use_t_loss else None
+criterionT = TverskyLoss(alpha=args.t_alpha, beta=args.t_beta) if args.use_t_loss else None
 print('Using losses: GAN={}, FM={}, Tversky={}, Alpha={}, Beta={}'
        .format(args.lambda_gan,
                args.lambda_fm if criterionFM else 0,
@@ -77,6 +77,8 @@ print('Using losses: GAN={}, FM={}, Tversky={}, Alpha={}, Beta={}'
                args.t_beta if criterionT else 0,))
 
 
-train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-          schedulerG, schedulerD, criterionGAN, criterionFM, criterionT, start_epoch,
-          device, args, train_hist)
+#train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
+#          schedulerG, schedulerD, criterionGAN, criterionFM, criterionT, start_epoch,
+#          device, args, train_hist)
+
+train(netG, train_loader, val_loader, optimizerG, schedulerG, criterionT, start_epoch, device, args, train_hist)
