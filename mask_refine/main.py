@@ -30,9 +30,9 @@ netG = Generator(ngf=args.ngf, residual_blocks=args.n_blocks_g, use_spectral_nor
 netG.to(device)
 init_weights(netG, args.init_type, init_gain=args.init_gain)
 
-#netD = Discriminator(in_channels=3, ndf=args.ndf, use_sigmoid=args.gan_loss != 'lsgan', use_spectral_norm=args.spectral_norm_d)
-#netD.to(device)
-#init_weights(netD, args.init_type, init_gain=args.init_gain)
+netD = Discriminator(in_channels=3, ndf=args.ndf, use_sigmoid=args.gan_loss != 'lsgan', use_spectral_norm=args.spectral_norm_d)
+netD.to(device)
+init_weights(netD, args.init_type, init_gain=args.init_gain)
 
 
 # Setup optimizer and scheduler
