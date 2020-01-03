@@ -209,7 +209,8 @@ def save_plots(train_hist, save_path):
     # Tversky Loss
     plt.figure(figsize=(10,5))
     plt.title("Tversky Losses")
-    plt.plot(x_range, train_hist['T_losses'],label="T")
+    plt.plot(x_range, train_hist['T_losses'],label="T_train")
+    plt.plot(x_range, train_hist['T_val_losses'],label="T_val")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
@@ -234,14 +235,4 @@ def save_plots(train_hist, save_path):
     plt.ylabel("Recall")
     plt.legend()
     plt.savefig(save_path+'recall.png')
-    plt.clf()
-
-    # Validation Tversky Loss
-    plt.figure(figsize=(10,5))
-    plt.title("Validation Tversky Losses")
-    plt.plot(x_range, train_hist['T_val_losses'],label="T")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.legend()
-    plt.savefig(save_path+'val_tversky_loss.png')
     plt.clf()

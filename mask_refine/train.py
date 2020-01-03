@@ -192,7 +192,7 @@ def train(net, train_loader, val_loader, optimizer, scheduler, criterion,
             if (i+1)%args.batch_log_rate == 0:
                 print('[Epoch {}/{}, Batch {}/{}] Tversky loss: {}'
                       .format(epoch, args.epochs, i+1, len(train_loader), np.mean(losses)))
-            
+            break
         # Save model
         save_checkpoint({'epoch': epoch,
                          'state_dict': net.state_dict(),
@@ -214,14 +214,15 @@ def train(net, train_loader, val_loader, optimizer, scheduler, criterion,
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
         
-            avg_precision, avg_recall = test(net, val_loader, device, save_batches=args.save_samples_batches, save_path=save_path)
+            avg_precision, avg_recall, avg_t_loss = test(net, val_loader, device, criterion, save_batches=args.save_samples_batches, save_path=save_path)
         
         else:
-            avg_precision, avg_recall = test(net, val_loader, device)
+            avg_precision, avg_recall, avg_t_loss = test(net, val_loader, device, criterion)
 
         train_hist['Precision'].append(avg_precision)
         train_hist['Recall'].append(avg_recall)
-        print("Precision: {} Recall: {}\n".format(avg_precision, avg_recall))
+        train_hist['Val_losses'].append(avg_t_loss)
+        print("Precision: {} Recall: {} Tversky Loss: {}\n".format(avg_precision, avg_recall, avg_t_loss))
 
         # Save training history plot
         #save_plots(train_hist, args.plot_path)
