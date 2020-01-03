@@ -192,7 +192,7 @@ def train(net, train_loader, val_loader, optimizer, scheduler, criterion,
             if (i+1)%args.batch_log_rate == 0:
                 print('[Epoch {}/{}, Batch {}/{}] Tversky loss: {}'
                       .format(epoch, args.epochs, i+1, len(train_loader), np.mean(losses)))
-            break
+            
         # Save model
         save_checkpoint({'epoch': epoch,
                          'state_dict': net.state_dict(),
