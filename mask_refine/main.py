@@ -63,9 +63,9 @@ if args.resume:
     optimizerG.load_state_dict(checkpoint['optimizer_state_dict'])
     
 
-    if checkpoint['schedulerG_state_dict']:
-        schedulerG.load_state_dict(checkpoint['schedulerG_state_dict'])
-        schedulerD.load_state_dict(checkpoint['schedulerD_state_dict'])
+    #if checkpoint['schedulerG_state_dict']:
+    #    schedulerG.load_state_dict(checkpoint['schedulerG_state_dict'])
+    #    schedulerD.load_state_dict(checkpoint['schedulerD_state_dict'])
 
     print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
