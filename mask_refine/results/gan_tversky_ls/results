@@ -1,0 +1,27 @@
+Epoch 16:
+Precision: 0.8101399761438369 Recall: 0.9864297397931416 Tversky Loss: 0.03491650283336639 (epoch16)
+Precision: 0.8384464687108993 Recall: 0.9716026324033737 Tversky Loss: 0.04402106126149496 (epoch12)
+D loss: 0.22227461677945887 G loss: 0.3292565302979208 FM loss: 0.0 Tversky loss: 0.0344435076182938
+
+!python ./manga-text-inpainting/mask_refine/main.py \
+--data_path ./data/ \
+--epochs 16 \
+--batch_size 8 \
+--ngf 32 \
+--ndf 32 \
+--gan_loss lsgan \
+--scheduler none \
+--use_t_loss \
+--lambda_gan 1 \
+--lambda_t 10 \
+--t_alpha 0.1 \
+--t_beta 0.9 \
+--width 256 \
+--height 512 \
+--lrG 0.0001 \
+--lrD 0.00001 \
+--beta1 0 \
+--beta2 0.9 \
+--dilation 2 \
+--spectral_norm_g \
+--checkpoint_path ./drive/'My Drive'/ \

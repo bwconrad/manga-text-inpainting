@@ -30,9 +30,9 @@ netG = Generator(ngf=args.ngf, residual_blocks=args.n_blocks_g, use_spectral_nor
 netG.to(device)
 init_weights(netG, args.init_type, init_gain=args.init_gain)
 
-netD = Discriminator(in_channels=3, ndf=args.ndf, use_sigmoid=args.gan_loss != 'lsgan', use_spectral_norm=args.spectral_norm_d)
-netD.to(device)
-init_weights(netD, args.init_type, init_gain=args.init_gain)
+#netD = Discriminator(in_channels=3, ndf=args.ndf, use_sigmoid=args.gan_loss != 'lsgan', use_spectral_norm=args.spectral_norm_d)
+#netD.to(device)
+#init_weights(netD, args.init_type, init_gain=args.init_gain)
 
 
 # Setup optimizer and scheduler
@@ -53,16 +53,17 @@ if args.resume:
     resume_args = checkpoint['args']
     train_hist = checkpoint['train_hist']
 
-    netG.load_state_dict(checkpoint['G_state_dict'])
-    netD.load_state_dict(checkpoint['D_state_dict'])
+    #netG.load_state_dict(checkpoint['G_state_dict'])
+    #netD.load_state_dict(checkpoint['D_state_dict'])
+    netG.load_state_dict(checkpoint['state_dict'])
+
+    #optimizerG.load_state_dict(checkpoint['optimizerG_state_dict'])
+    #optimizerD.load_state_dict(checkpoint['optimizerD_state_dict'])  
+    optimizerG.load_state_dict(checkpoint['optimizer_state_dict'])
     
-
-    optimizerG.load_state_dict(checkpoint['optimizerG_state_dict'])
-    optimizerD.load_state_dict(checkpoint['optimizerD_state_dict'])  
-
-    if checkpoint['schedulerG_state_dict']:
-        schedulerG.load_state_dict(checkpoint['schedulerG_state_dict'])
-        schedulerD.load_state_dict(checkpoint['schedulerD_state_dict'])
+    #if checkpoint['schedulerG_state_dict']:
+    #    schedulerG.load_state_dict(checkpoint['schedulerG_state_dict'])
+    #    schedulerD.load_state_dict(checkpoint['schedulerD_state_dict'])
 
     print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
@@ -78,8 +79,8 @@ print('Using losses: GAN={}, FM={}, Tversky={}, Alpha={}, Beta={}'
                args.t_beta if criterionT else 0,))
 
 
-train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-          schedulerG, schedulerD, criterionGAN, criterionFM, criterionT, start_epoch,
-          device, args, train_hist)
+#train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
+#          schedulerG, schedulerD, criterionGAN, criterionFM, criterionT, start_epoch,
+#          device, args, train_hist)
 
-#train(netG, train_loader, val_loader, optimizerG, schedulerG, criterionT, start_epoch, device, args, train_hist)
+train(netG, train_loader, val_loader, optimizerG, schedulerG, criterionT, start_epoch, device, args, train_hist)
