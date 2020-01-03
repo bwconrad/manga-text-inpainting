@@ -2,7 +2,7 @@ python main.py \
 --data_path ./data/ \
 --epochs 16 \
 --batch_size 8 \
---gan_loss vanilla \
+--gan_loss lsgan \
 --scheduler none \
 --use_t_loss \
 --lambda_gan 1 \

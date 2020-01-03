@@ -226,7 +226,7 @@ def save_plots(train_hist, save_path):
     plt.savefig(save_path+'precision.png')
     plt.clf()
 
-    # PSRN
+    # Recall
     plt.figure(figsize=(10,5))
     plt.title("Validation Recall")
     plt.plot(x_range, train_hist['Recall'],label="Recall")
@@ -234,4 +234,14 @@ def save_plots(train_hist, save_path):
     plt.ylabel("Recall")
     plt.legend()
     plt.savefig(save_path+'recall.png')
+    plt.clf()
+
+    # Validation Tversky Loss
+    plt.figure(figsize=(10,5))
+    plt.title("Validation Tversky Losses")
+    plt.plot(x_range, train_hist['T_val_losses'],label="T")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(save_path+'val_tversky_loss.png')
     plt.clf()

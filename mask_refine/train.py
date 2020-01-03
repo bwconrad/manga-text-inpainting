@@ -36,7 +36,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
                       'T_losses': [],
                       'Precision': [], 
                       'Recall': [],
-                      'FM_val_losses': []}
+                      'T_val_losses': []}
     start = time.time()
 
     print('\nStarting to train...')
@@ -130,13 +130,14 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             save_path = args.save_samples_path+'epoch{}/'.format(epoch)
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
-            avg_precision, avg_recall = test(netG, val_loader, device, save_batches=args.save_samples_batches, save_path=save_path)
+            avg_precision, avg_recall, avg_t_loss = test(netG, val_loader, device, criterionT, save_batches=args.save_samples_batches, save_path=save_path)
         else:
-            avg_precision, avg_recall = test(netG, val_loader, device)
+            avg_precision, avg_recall, avg_t_loss = test(netG, val_loader, device, criterionT)
 
         train_hist['Precision'].append(avg_precision)
         train_hist['Recall'].append(avg_recall)
-        print("Precision: {} Recall: {}\n".format(avg_precision, avg_recall))
+        train_hist['T_val_losses'].append(avg_t_loss)
+        print("Precision: {} Recall: {} Tversky Loss: {}\n".format(avg_precision, avg_recall, avg_t_loss))
 
         # Save training history plot
         save_plots(train_hist, args.plot_path)
@@ -153,6 +154,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
 
     hours, minutes, seconds = calculate_time(start, time.time())
     print('Training completed in {}h {}m {:04.2f}s'.format(hours, minutes, seconds))
+
 
 
 def train(net, train_loader, val_loader, optimizer, scheduler, criterion, 
