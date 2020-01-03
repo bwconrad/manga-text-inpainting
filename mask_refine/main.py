@@ -53,11 +53,15 @@ if args.resume:
     resume_args = checkpoint['args']
     train_hist = checkpoint['train_hist']
 
-    netG.load_state_dict(checkpoint['G_state_dict'])
-    netD.load_state_dict(checkpoint['D_state_dict'])
+    #netG.load_state_dict(checkpoint['G_state_dict'])
+    #netD.load_state_dict(checkpoint['D_state_dict'])
+    netG.load_state_dict(checkpoint['state_dict'])
+    
 
-    optimizerG.load_state_dict(checkpoint['optimizerG_state_dict'])
-    optimizerD.load_state_dict(checkpoint['optimizerD_state_dict'])
+    #optimizerG.load_state_dict(checkpoint['optimizerG_state_dict'])
+    #optimizerD.load_state_dict(checkpoint['optimizerD_state_dict'])
+    optimizerG.load_state_dict(checkpoint['optimizer_state_dict'])
+    
 
     if checkpoint['schedulerG_state_dict']:
         schedulerG.load_state_dict(checkpoint['schedulerG_state_dict'])
