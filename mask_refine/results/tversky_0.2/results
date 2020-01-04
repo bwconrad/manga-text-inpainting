@@ -1,0 +1,31 @@
+Epoch 48:
+[Epoch 48/48] Tversky loss: 0.04348618154330169
+
+Precision: 0.8468101495504379 Recall: 0.9856946661074957 Tversky Loss: 0.04576209982236226  F1: 0.9109894178563149 (epoch48)
+Precision: 0.8595237189531326 Recall: 0.9798394159475963 Tversky Loss: 0.04699008365472158 F1: 0.9157465459560783 (epoch43)
+Precision: 0.8447563272714614 Recall: 0.986709423661232 Tversky Loss: 0.0455213862657547 F1: 0.9102316310220044 (epoch45)
+Precision: 0.8554663815100988 Recall: 0.9824304050207138 Tversky Loss: 0.04602850874265035 F1: 0.9145629828919456 (epoch46)
+
+!python ./manga-text-inpainting/mask_refine/main.py \
+--data_path ./data/ \
+--epochs 48 \
+--batch_size 8 \
+--ngf 32 \
+--ndf 32 \
+--gan_loss lsgan \
+--scheduler none \
+--use_t_loss \
+--lambda_gan 1 \
+--lambda_t 1 \
+--t_alpha 0.2 \
+--t_beta 0.8 \
+--width 256 \
+--height 512 \
+--lrG 0.0001 \
+--lrD 0.00001 \
+--beta1 0 \
+--beta2 0.9 \
+--dilation 2 \
+--spectral_norm_g \
+--checkpoint_path ./drive/'My Drive'/ \
+--resume ./drive/'My Drive'/checkpoint_epoch32.pth.tar

@@ -1,0 +1,45 @@
+Epoch 16:
+PSRN: 25.62894291692702 SSIM: 0.9667241869370142 L1: 0.13524944769839445 (epoch 16)
+D loss: 0.005049766503158953 G loss: 0.9939556822299415 L1 loss: 0.12934731752256756 Perceptual loss: 0.4334234472676394 Style loss: 0.00021260042643958754 TV loss: 0.1712539857045059
+
+Epoch 24:
+PSRN: 26.15111056754736 SSIM: 0.9721183313926061 L1: 0.11728217658897241 (epoch 22)
+D loss: 0.003612391422956085 G loss: 0.9962520655647208 L1 loss: 0.11496597977696289 Perceptual loss: 0.3919456018997405 Style loss: 0.00019799507909487428 TV loss: 0.17138437010209398
+
+Epoch 36:
+PSRN: 26.812652488726748 SSIM: 0.9760670938094457 L1: 0.09582849932213625 (epoch 36)
+D loss: 0.00252772543889825 G loss: 0.9976658922142272 L1 loss: 0.10346090248872442 Perceptual loss:
+0.35903648805518834 Style loss: 0.00018477143601969861 TV loss: 0.17148468913535164
+
+!python ./manga-text-inpainting/main.py \
+--data_path ./data/ \
+--epochs 16 \
+--batch_size 8 \
+--ngf 32 \
+--ndf 32 \
+--gan_loss lsgan \
+--discriminator patch \
+--scheduler none \
+--use_l1_loss \
+--use_perceptual_loss \
+--use_style_loss \
+--use_tv_loss \
+--lambda_gan 0.01 \
+--lambda_l1 1 \
+--lambda_perceptual 0.1 \
+--lambda_style 250 \
+--lambda_tv 0.1 \
+--width 256 \
+--height 512 \
+--n_downsamples_g 2 \
+--lrG 0.0002 \
+--lrD 0.00002 \
+--beta1 0 \
+--beta2 0.9 \
+--norm instance \
+--dilation 2 \
+--kernel_size_g 4 \
+--spectral_norm_d \
+--edges \
+--resume ./drive/'My Drive'/checkpoint_epoch8.pth.tar \
+--archive

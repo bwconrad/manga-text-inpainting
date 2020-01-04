@@ -1,0 +1,3 @@
+l1 training: 0.0157
+ssim: 0.96245
+psrn: 23.32
