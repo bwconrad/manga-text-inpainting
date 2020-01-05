@@ -54,6 +54,10 @@ class EdgeMangaDataset(data.Dataset):
         clean_path = self.root + 'clean/' + name
         clean_img = self.loader(clean_path)
 
+        # Load text mask
+        text_mask_path = self.root + 'mask/' + name
+        text_mask = self.loader(text_mask_path)
+
         # Create the mask
         bboxes = self.bboxes[index]
         mask = self.create_mask(bboxes, dirty_img.size[0], dirty_img.size[1]) # Create mask of text locations
@@ -89,15 +93,18 @@ class EdgeMangaDataset(data.Dataset):
         mask = self.mask_resize(mask)
         mask = self.tensor(mask)
 
+        text_mask = self.tensor(text_mask) # Text mask are saved as the training size
+
         # Create edge map from clean image
         edge_target = self.resize(clean_img)
         edge_target = np.array(edge_target)
         edge_target = img_as_float(edge_target)
-        edge_target = feature.canny(edge_target, sigma=2) 
+        edge_target = feature.canny(edge_target, sigma=2, low_threshold=0.05) 
         edge_target = self.tensor(edge_target).float()
-        edge_input = edge_target * (1-mask)
         
-        return dirty_img, mask, edge_input, edge_target, name
+        edge_input = edge_target * (1-text_mask)
+        
+        return dirty_img, mask, text_mask, edge_input, edge_target, name
 
     def __len__(self):
         return len(self.imgs)

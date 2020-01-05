@@ -49,9 +49,9 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
         D_losses = []
         fm_losses = []
         
-        for i, (images, masks, edge_inputs, edge_targets, _) in enumerate(train_loader):
-            images, masks, edge_inputs, edge_targets = images.to(device), masks.to(device), edge_inputs.to(device), edge_targets.to(device)
-            fake_edge_outputs = netG(torch.cat((images, masks, edge_inputs), 1))
+        for i, (images, masks, text_masks, edge_inputs, edge_targets, _) in enumerate(train_loader):
+            images, masks, text_masks, edge_inputs, edge_targets = images.to(device), masks.to(device), text_masks.to(device), edge_inputs.to(device), edge_targets.to(device)
+            fake_edge_outputs = netG(torch.cat((images, text_masks, edge_inputs), 1))
 
             ############
             # Update D #
@@ -60,11 +60,11 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             optimizerD.zero_grad()
 
             # Real loss
-            validity_real, dis_real_features = netD(torch.cat((images, masks, edge_targets), 1))
+            validity_real, dis_real_features = netD(torch.cat((images, text_masks, edge_targets), 1))
             d_real_loss = criterionGAN(validity_real, is_real=True, is_disc=True)
 
             # Fake loss
-            validity_fake, dis_fake_features = netD(torch.cat((images, masks, fake_edge_outputs.detach()), 1))
+            validity_fake, dis_fake_features = netD(torch.cat((images, text_masks, fake_edge_outputs.detach()), 1))
             d_fake_loss = criterionGAN(validity_fake, is_real=False, is_disc=True)
 
             # Combined loss
@@ -79,7 +79,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             optimizerG.zero_grad()   
 
             # GAN loss
-            validity_fake, gen_fake_features = netD(torch.cat((images, masks, fake_edge_outputs), 1))  
+            validity_fake, gen_fake_features = netD(torch.cat((images, text_masks, fake_edge_outputs), 1))  
             g_loss_gan = criterionGAN(validity_fake, is_real=True, is_disc=False)                    
             
             # Feature matching loss 
