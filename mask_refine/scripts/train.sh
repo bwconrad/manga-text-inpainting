@@ -1,23 +1,16 @@
 python main.py \
---data_path ./data/ \
+--data_path ../data/ \
 --epochs 16 \
 --batch_size 8 \
---gan_loss lsgan \
 --scheduler none \
---use_t_loss \
---lambda_gan 1 \
---lambda_t 10 \
 --t_alpha 0.1 \
 --t_beta 0.9 \
 --width 256 \
 --height 512 \
---lrG 0.0001 \
---lrD 0.00001 \
+--lr 0.001 \
 --beta1 0 \
 --beta2 0.9 \
 --dilation 2 \
---spectral_norm_d \
---spectral_norm_g \
+--spectral_norm \
 --ngf 32 \
---ndf 32 \
 

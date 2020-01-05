@@ -5,9 +5,9 @@ import sys
 
 from utils import *
 from dataset import MaskRefineDataset
-from models import Generator, Discriminator
-from loss import GANLoss, TverskyLoss
-from train import train_gan, train
+from models import Generator
+from loss import TverskyLoss
+from train import train
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 cudnn.benchmark = True
@@ -26,21 +26,14 @@ val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size
 # Setup models
 print('\nInitializing models...')
 
-netG = Generator(ngf=args.ngf, residual_blocks=args.n_blocks_g, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation)
-netG.to(device)
-init_weights(netG, args.init_type, init_gain=args.init_gain)
-
-netD = Discriminator(in_channels=3, ndf=args.ndf, use_sigmoid=args.gan_loss != 'lsgan', use_spectral_norm=args.spectral_norm_d)
-netD.to(device)
-init_weights(netD, args.init_type, init_gain=args.init_gain)
-
+net = Generator(ngf=args.ngf, residual_blocks=args.n_blocks, use_spectral_norm=args.spectral_norm, dilation=args.dilation)
+net.to(device)
+init_weights(net, args.init_type, init_gain=args.init_gain)
 
 # Setup optimizer and scheduler
 print('\nSetting up optimizer...')
-optimizerG = optim.Adam(netG.parameters(), lr=args.lrG, betas=(args.beta1, args.beta2))
-optimizerD = optim.Adam(netD.parameters(), lr=args.lrD, betas=(args.beta1, args.beta2))
-
-schedulerG, schedulerD = get_schedulers(optimizerG, optimizerD, args)
+optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
+scheduler = get_schedulers(optimizer, args)
 
 start_epoch = 1
 train_hist = None
@@ -53,34 +46,17 @@ if args.resume:
     resume_args = checkpoint['args']
     train_hist = checkpoint['train_hist']
 
-    #netG.load_state_dict(checkpoint['G_state_dict'])
-    #netD.load_state_dict(checkpoint['D_state_dict'])
-    netG.load_state_dict(checkpoint['state_dict'])
-
-    #optimizerG.load_state_dict(checkpoint['optimizerG_state_dict'])
-    #optimizerD.load_state_dict(checkpoint['optimizerD_state_dict'])  
-    optimizerG.load_state_dict(checkpoint['optimizer_state_dict'])
+    net.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     
-    #if checkpoint['schedulerG_state_dict']:
-    #    schedulerG.load_state_dict(checkpoint['schedulerG_state_dict'])
-    #    schedulerD.load_state_dict(checkpoint['schedulerD_state_dict'])
+    if checkpoint['scheduler_state_dict']:
+        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
 
     print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
 # Define loss functions
-criterionGAN = GANLoss(args.gan_loss).to(device)
-criterionFM = torch.nn.L1Loss() if args.use_fm_loss else None
-criterionT = TverskyLoss(alpha=args.t_alpha, beta=args.t_beta) if args.use_t_loss else None
-print('Using losses: GAN={}, FM={}, Tversky={}, Alpha={}, Beta={}'
-       .format(args.lambda_gan,
-               args.lambda_fm if criterionFM else 0,
-               args.lambda_t if criterionT else 0,
-               args.t_alpha if criterionT else 0,
-               args.t_beta if criterionT else 0,))
+criterionT = TverskyLoss(alpha=args.t_alpha, beta=args.t_beta) 
+print('Using Tversky loss with Alpha={}, Beta={}'
+       .format(args.t_alpha, args.t_beta ))
 
-
-#train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-#          schedulerG, schedulerD, criterionGAN, criterionFM, criterionT, start_epoch,
-#          device, args, train_hist)
-
-train(netG, train_loader, val_loader, optimizerG, schedulerG, criterionT, start_epoch, device, args, train_hist)
+train(net, train_loader, val_loader, optimizer, scheduler, criterionT, start_epoch, device, args, train_hist)

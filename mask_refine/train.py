@@ -6,13 +6,6 @@ import shutil
 from utils import *
 from test import *
 
-def set_requires_grad(nets, requires_grad=False):
-    if not isinstance(nets, list):
-        nets = [nets]
-    for net in nets:
-        if net is not None:
-            for param in net.parameters():
-                param.requires_grad = requires_grad
 
 def update_learning_rate(schedulers, type):
     '''
@@ -24,147 +17,15 @@ def update_learning_rate(schedulers, type):
         else:
             scheduler.step()
 
-
-def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-              schedulerG, schedulerD, criterionGAN, criterionFM, criterionT, 
-              start_epoch, device, args, train_hist=None):
-    
-    if not train_hist:
-        train_hist = {'D_losses': [], 
-                      'G_losses': [], 
-                      'FM_losses': [],
-                      'T_losses': [],
-                      'Precision': [], 
-                      'Recall': [],
-                      'T_val_losses': []}
-    start = time.time()
-
-    print('\nStarting to train...')
-    for epoch in range(start_epoch, args.epochs+1):
-        netG.train()
-        netD.train()
-        start_epoch = time.time()
-
-        # Batch losses of the current epoch
-        G_losses = [] 
-        D_losses = []
-        fm_losses = []
-        t_losses = []
-        
-        for i, (images, masks, text_masks, _) in enumerate(train_loader):
-            images, masks, text_masks = images.to(device), masks.to(device), text_masks.to(device)
-            fake_text_mask_outputs = netG(torch.cat((images, masks), 1))
-
-            ############
-            # Update D #
-            ############
-            set_requires_grad(netD, True) # enable backprop for D
-            optimizerD.zero_grad()
-
-            # Real loss
-            validity_real, dis_real_features = netD(torch.cat((images, masks, text_masks), 1))
-            d_real_loss = criterionGAN(validity_real, is_real=True, is_disc=True)
-
-            # Fake loss
-            validity_fake, dis_fake_features = netD(torch.cat((images, masks, fake_text_mask_outputs.detach()), 1))
-            d_fake_loss = criterionGAN(validity_fake, is_real=False, is_disc=True)
-
-            # Combined loss
-            d_loss = (d_real_loss + d_fake_loss) / 2
-            d_loss.backward()
-            optimizerD.step()
-
-            ############
-            # Update G #
-            ############
-            set_requires_grad(netD, False)  # D requires no gradients when optimizing G
-            optimizerG.zero_grad()   
-
-            # GAN loss
-            validity_fake, gen_fake_features = netD(torch.cat((images, masks, fake_text_mask_outputs), 1))  
-            g_loss_gan = criterionGAN(validity_fake, is_real=True, is_disc=False)                    
-            
-            # Feature matching loss 
-            g_loss_fm = 0
-            for j in range(len(dis_real_features)):
-                g_loss_fm += criterionFM(gen_fake_features[j], dis_real_features[j].detach()) if criterionFM else torch.tensor(0).float()
-
-            # Tversky loss
-            g_loss_t = criterionT(fake_text_mask_outputs, text_masks)
-
-            # Combined loss
-            g_loss = (g_loss_gan * args.lambda_gan) + (g_loss_fm * args.lambda_fm) + (g_loss_t * args.lambda_t)
-
-            g_loss.backward()
-            optimizerG.step()
-
-            # Save batch losses
-            D_losses.append(d_loss.detach().item())
-            G_losses.append(g_loss_gan.detach().item())
-            fm_losses.append(g_loss_fm.detach().item())
-            t_losses.append(g_loss_t.detach().item())
-
-
-            if (i+1)%args.batch_log_rate == 0:
-                print('[Epoch {}/{}, Batch {}/{}] FM loss: {}, Tversky loss: {}'
-                      .format(epoch, args.epochs, i+1, len(train_loader), np.mean(fm_losses), np.mean(t_losses)))
-            
-        # Save model
-        save_checkpoint({'epoch': epoch,
-                         'G_state_dict': netG.state_dict(),
-                         'D_state_dict': netD.state_dict(),
-                         'optimizerG_state_dict' : optimizerG.state_dict(),
-                         'optimizerD_state_dict' : optimizerD.state_dict(),
-                         'schedulerG_state_dict' : schedulerG.state_dict() if schedulerG else None,
-                         'schedulerD_state_dict' : schedulerD.state_dict() if schedulerD else None,  
-                         'args': args,
-                         'train_hist': train_hist
-                        }, epoch, args.checkpoint_path)
-
-        # Print epoch information
-        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, fm_losses, t_losses, train_hist)
-
-        # Evaluate on validation set
-        print('Evaluating on validation set...')
-        if epoch%args.save_samples_rate == 0:
-            save_path = args.save_samples_path+'epoch{}/'.format(epoch)
-            if not os.path.exists(save_path):
-                os.makedirs(save_path)
-            avg_precision, avg_recall, avg_t_loss = test(netG, val_loader, device, criterionT, save_batches=args.save_samples_batches, save_path=save_path)
-        else:
-            avg_precision, avg_recall, avg_t_loss = test(netG, val_loader, device, criterionT)
-
-        train_hist['Precision'].append(avg_precision)
-        train_hist['Recall'].append(avg_recall)
-        train_hist['T_val_losses'].append(avg_t_loss)
-        print("Precision: {} Recall: {} Tversky Loss: {}\n".format(avg_precision, avg_recall, avg_t_loss))
-
-        # Save training history plot
-        save_plots(train_hist, args.plot_path)
-
-        # Update lr schedulers
-        if schedulerG:
-            update_learning_rate([schedulerG, schedulerD], args.scheduler)
-
-    if args.archive:
-        shutil.make_archive('images', 'zip', args.save_samples_path)
-        shutil.make_archive('checkpoints', 'zip', args.checkpoint_path)
-        shutil.make_archive('plots', 'zip', args.plot_path)
-
-
-    hours, minutes, seconds = calculate_time(start, time.time())
-    print('Training completed in {}h {}m {:04.2f}s'.format(hours, minutes, seconds))
-
-
-
 def train(net, train_loader, val_loader, optimizer, scheduler, criterion, 
           start_epoch, device, args, train_hist=None):
     
     if not train_hist:
-        train_hist = {'Train_losses': [],
-                      'Val_losses': [],
+        train_hist = {'T_losses': [],
+                      'T_val_losses': [],
                       'Precision': [], 
-                      'Recall': []}
+                      'Recall': [],
+                      'F1': []}
     start = time.time()
 
     print('\nStarting to train...')
@@ -192,7 +53,7 @@ def train(net, train_loader, val_loader, optimizer, scheduler, criterion,
             if (i+1)%args.batch_log_rate == 0:
                 print('[Epoch {}/{}, Batch {}/{}] Tversky loss: {}'
                       .format(epoch, args.epochs, i+1, len(train_loader), np.mean(losses)))
-            
+            break
         # Save model
         save_checkpoint({'epoch': epoch,
                          'state_dict': net.state_dict(),
@@ -203,9 +64,7 @@ def train(net, train_loader, val_loader, optimizer, scheduler, criterion,
                         }, epoch, args.checkpoint_path)
 
         # Print epoch information
-        #print_epoch_stats(epoch, start_epoch, time.time(), losses, train_hist)
-        print('[Epoch {}/{}] Tversky loss: {}'
-                      .format(epoch, args.epochs, np.mean(losses)))
+        print_epoch_stats(epoch, start_epoch, time.time(), losses, train_hist)
 
         # Evaluate on validation set
         print('Evaluating on validation set...')
@@ -219,13 +78,15 @@ def train(net, train_loader, val_loader, optimizer, scheduler, criterion,
         else:
             avg_precision, avg_recall, avg_t_loss = test(net, val_loader, device, criterion)
 
+        f1 = (2*avg_precision*avg_recall) / (avg_precision+avg_recall)
         train_hist['Precision'].append(avg_precision)
         train_hist['Recall'].append(avg_recall)
-        train_hist['Val_losses'].append(avg_t_loss)
-        print("Precision: {} Recall: {} Tversky Loss: {}\n".format(avg_precision, avg_recall, avg_t_loss))
+        train_hist['F1'].append(f1)
+        train_hist['T_val_losses'].append(avg_t_loss)
+        print("Precision: {} Recall: {} F1: {} Tversky Loss: {}\n".format(avg_precision, avg_recall, f1, avg_t_loss))
 
         # Save training history plot
-        #save_plots(train_hist, args.plot_path)
+        save_plots(train_hist, args.plot_path)
 
         # Update lr schedulers
         if scheduler:

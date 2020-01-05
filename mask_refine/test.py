@@ -6,9 +6,9 @@ import os
 
 from metrics import Accuracy
 
-def test(netG, loader, device, criterionT, save_batches=0, save_path=None):
+def test(net, loader, device, criterionT, save_batches=0, save_path=None):
     with torch.no_grad(): 
-        netG.eval()
+        net.eval()
 
         acc = Accuracy().to(device)
 
@@ -23,7 +23,7 @@ def test(netG, loader, device, criterionT, save_batches=0, save_path=None):
             images, masks, text_masks = images.to(device), masks.to(device), text_masks.to(device)
             
             # Pass images through generator
-            text_mask_outputs = netG(torch.cat((images, masks), 1))
+            text_mask_outputs = net(torch.cat((images, masks), 1))
 
             # Get precision and recall
             precision, recall = acc(text_masks, text_mask_outputs)
@@ -39,7 +39,7 @@ def test(netG, loader, device, criterionT, save_batches=0, save_path=None):
                 for j in range(text_mask_outputs.size(0)):
                     save_images_outputs.append(((text_mask_outputs[j].cpu().data.numpy().transpose(1, 2, 0))*255).astype('uint8')) # Generated refined mask
                     save_images_targets.append(((text_masks[j].cpu().data.numpy().transpose(1, 2, 0))*255).astype('uint8'))  # Corresponding corresponding ground truth edge map
-            
+            break
         avg_precision = np.mean(precisions)
         avg_recall = np.mean(recalls)
         avg_t_loss = np.mean(t_losses)

@@ -2,8 +2,6 @@ Epoch 48:
 [Epoch 48/48] Tversky loss: 0.04348618154330169
 
 Precision: 0.8468101495504379 Recall: 0.9856946661074957 Tversky Loss: 0.04576209982236226  F1: 0.9109894178563149 (epoch48)
-Precision: 0.8595237189531326 Recall: 0.9798394159475963 Tversky Loss: 0.04699008365472158 F1: 0.9157465459560783 (epoch43)
-Precision: 0.8447563272714614 Recall: 0.986709423661232 Tversky Loss: 0.0455213862657547 F1: 0.9102316310220044 (epoch45)
 Precision: 0.8554663815100988 Recall: 0.9824304050207138 Tversky Loss: 0.04602850874265035 F1: 0.9145629828919456 (epoch46)
 
 !python ./manga-text-inpainting/mask_refine/main.py \
@@ -21,8 +19,8 @@ Precision: 0.8554663815100988 Recall: 0.9824304050207138 Tversky Loss: 0.0460285
 --t_beta 0.8 \
 --width 256 \
 --height 512 \
---lrG 0.0001 \
---lrD 0.00001 \
+--lrG 0.001 \ (0.0001 after 32)
+--lrD 0.0001 \ (0.00001 after 32)
 --beta1 0 \
 --beta2 0.9 \
 --dilation 2 \

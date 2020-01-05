@@ -53,7 +53,7 @@ class MaskRefineDataset(data.Dataset):
         dirty_img = self.loader(dirty_path)
         
         # Load text mask
-        text_path = self.root + 'text/' + name
+        text_path = self.root + 'mask_targets/' + name
         mask_text = self.loader(text_path) 
 
         # Create the mask
