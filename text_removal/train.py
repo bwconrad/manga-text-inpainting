@@ -122,6 +122,9 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
                       .format(epoch, args.epochs, i+1, len(train_loader), np.mean(l1_losses), 
                               np.mean(perceptual_losses), np.mean(style_losses), np.mean(tv_losses)))
             
+        # Print epoch information
+        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, l1_losses, perceptual_losses, style_losses, tv_losses, train_hist)
+       
         # Save model
         save_checkpoint({'epoch': epoch,
                          'G_state_dict': netG.state_dict(),
@@ -134,8 +137,6 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
                          'train_hist': train_hist
                         }, epoch, args.checkpoint_path)
 
-        # Print epoch information
-        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, l1_losses, perceptual_losses, style_losses, tv_losses, train_hist)
         
         # Evaluate on validation set
         print('Evaluating on validation set...')

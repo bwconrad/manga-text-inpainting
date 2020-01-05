@@ -31,12 +31,11 @@ def get_args():
     parser.add_argument('--init_type', type=str, default='normal', help='network initialization [normal | xavier | kaiming | orthogonal]')
     parser.add_argument('--init_gain', type=float, default=0.02, help='scaling factor for normal, xavier and orthogonal.')
     parser.add_argument('--n_blocks_g', type=int, default=8, help='# of resblocks in generator')
-    parser.add_argument('--spectral_norm_g', dest='spectral_norm_g', action='store_true', default=True, help='use spectral normalization in generator')
-    parser.add_argument('--spectral_norm_d', dest='spectral_norm_d', action='store_true', default=True, help='use spectral normalization in discriminator')
+    parser.add_argument('--spectral_norm_g', dest='spectral_norm_g', action='store_true', default=False, help='use spectral normalization in generator')
+    parser.add_argument('--spectral_norm_d', dest='spectral_norm_d', action='store_true', default=False, help='use spectral normalization in discriminator')
     parser.add_argument('--dilation', type=int, default=2, help='amount of dilation')
     parser.add_argument('--ngf', type=int, default=64, help='# of feature channels in generator first layer')
     parser.add_argument('--ndf', type=int, default=64, help='# of feature channels in discriminator first layer')
-
 
     # Optimization arguments
     parser.add_argument('--epochs', type=int, default=1, help='number of training epochs')
@@ -48,9 +47,13 @@ def get_args():
     parser.add_argument('--workers', type=int, help='number of workers', default=6) 
 
     # Loss functions arguments
-    parser.add_argument('--use_fm_loss', dest='use_fm_loss', action='store_true', default=True, help='use feature matching loss')
+    parser.add_argument('--use_fm_loss', dest='use_fm_loss', action='store_true', default=False, help='use feature matching loss')
+    parser.add_argument('--use_tversky_loss', dest='use_tversky_loss', action='store_true', default=False, help='use tversky loss')
     parser.add_argument('--lambda_gan', type=float, default=1, help='lambda for GAN loss')
     parser.add_argument('--lambda_fm', type=float, default=10, help='lambda for feature matching loss')
+    parser.add_argument('--lambda_tversky', type=float, default=10, help='lambda for tversky loss')
+    parser.add_argument('--alpha_tversky', type=float, default=0.5, help='alpha for tversky loss')
+    parser.add_argument('--beta_tversky', type=float, default=0.5, help='beta for tversky loss')
     
     # lr scheduler arguments
     parser.add_argument('--scheduler', default='none', help='learning rate schedule [linear | step | cosine | none]')
@@ -154,7 +157,7 @@ def save_checkpoint(state, epoch, save_path):
         os.makedirs(save_path)
     torch.save(state, save_path+'checkpoint_epoch{}.pth.tar'.format(epoch))
 
-def print_epoch_stats(epoch, start, end, D_losses, G_losses, fm_losses, train_hist):
+def print_epoch_stats(epoch, start, end, D_losses, G_losses, fm_losses, tversky_losses, train_hist):
     # Save the average loss during the epoch
     avg_D_loss = np.mean(D_losses)
     train_hist['D_losses'].append(avg_D_loss)
@@ -165,10 +168,13 @@ def print_epoch_stats(epoch, start, end, D_losses, G_losses, fm_losses, train_hi
     avg_fm_loss = np.mean(fm_losses)
     train_hist['FM_losses'].append(avg_fm_loss)
 
+    avg_tversky_loss = np.mean(tversky_losses)
+    train_hist['Tversky_losses'].append(avg_tversky_loss)
+
     # Print epoch stats
     hours, minutes, seconds = calculate_time(start, end)
-    print("\nEpoch {} Completed in {}h {}m {:04.2f}s: D loss: {} G loss: {} FM loss: {}"
-              .format(epoch, hours, minutes, seconds, avg_D_loss, avg_G_loss, avg_fm_loss))
+    print("\nEpoch {} Completed in {}h {}m {:04.2f}s: D loss: {} G loss: {} FM loss: {} Tversky loss: {}"
+              .format(epoch, hours, minutes, seconds, avg_D_loss, avg_G_loss, avg_fm_loss, avg_tversky_loss))
 
 def save_plots(train_hist, save_path):
     if not os.path.exists(save_path):
@@ -225,4 +231,15 @@ def save_plots(train_hist, save_path):
     plt.ylabel("F1")
     plt.legend()
     plt.savefig(save_path+'f1.png')
+    plt.clf()
+
+    # Tversky Loss
+    plt.figure(figsize=(10,5))
+    plt.title("Tversky Losses")
+    plt.plot(x_range, train_hist['Tversky_losses'], label="Train")
+    plt.plot(x_range, train_hist['Val_tversky_losses'], label="Val")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(save_path+'tversky_loss.png')
     plt.clf()

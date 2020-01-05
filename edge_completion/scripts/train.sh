@@ -1,12 +1,16 @@
 python main.py \
---data_path ../../data/ \
+--data_path ./../data/ \
 --epochs 16 \
 --batch_size 8 \
 --gan_loss vanilla \
 --scheduler none \
 --use_fm_loss \
+--use_tversky_loss \
 --lambda_gan 1 \
 --lambda_fm 10 \
+--lambda_tversky 10 \
+--alpha_tversky 0.5 \
+--beta_tversky 0.5 \
 --width 256 \
 --height 512 \
 --lrG 0.0001 \

@@ -6,7 +6,7 @@ import sys
 from utils import *
 from dataset import EdgeMangaDataset
 from models import EdgeGenerator, Discriminator
-from loss import GANLoss
+from loss import GANLoss, TverskyLoss
 from train import train_gan
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -68,11 +68,13 @@ if args.resume:
 # Define loss functions
 criterionGAN = GANLoss(args.gan_loss).to(device)
 criterionFM = torch.nn.L1Loss() if args.use_fm_loss else None
-print('Using losses: GAN={}, FM={}'
+criterionT = TverskyLoss(args.alpha_tversky, args.beta_tversky) if args.use_tversky_loss else None
+print('Using losses: GAN={}, FM={}, Tversky={}'
        .format(args.lambda_gan,
-               args.lambda_fm if criterionFM else 0))
+               args.lambda_fm if criterionFM else 0,
+               args.lambda_tversky if criterionT else 0))
 
 
 train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-          schedulerG, schedulerD, criterionGAN, criterionFM, start_epoch,
+          schedulerG, schedulerD, criterionGAN, criterionFM, criterionT, start_epoch,
           device, args, train_hist)

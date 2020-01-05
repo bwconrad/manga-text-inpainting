@@ -39,7 +39,7 @@ def test(net, loader, device, criterionT, save_batches=0, save_path=None):
                 for j in range(text_mask_outputs.size(0)):
                     save_images_outputs.append(((text_mask_outputs[j].cpu().data.numpy().transpose(1, 2, 0))*255).astype('uint8')) # Generated refined mask
                     save_images_targets.append(((text_masks[j].cpu().data.numpy().transpose(1, 2, 0))*255).astype('uint8'))  # Corresponding corresponding ground truth edge map
-            break
+            
         avg_precision = np.mean(precisions)
         avg_recall = np.mean(recalls)
         avg_t_loss = np.mean(t_losses)

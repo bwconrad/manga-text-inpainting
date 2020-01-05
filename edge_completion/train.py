@@ -26,16 +26,18 @@ def update_learning_rate(schedulers, type):
 
 
 def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
-              schedulerG, schedulerD, criterionGAN, criterionFM, start_epoch, 
-              device, args, train_hist=None):
+              schedulerG, schedulerD, criterionGAN, criterionFM, criterionT, 
+              start_epoch, device, args, train_hist=None):
     
     if not train_hist:
         train_hist = {'D_losses': [], 
                       'G_losses': [], 
                       'FM_losses': [],
+                      'Tversky_losses': [],
                       'Precision': [], 
                       'Recall': [],
-                      'F1': [],}
+                      'F1': [],
+                      'Val_tversky_losses': []}
     start = time.time()
 
     print('\nStarting to train...')
@@ -48,6 +50,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
         G_losses = [] 
         D_losses = []
         fm_losses = []
+        tversky_losses = []
         
         for i, (images, masks, text_masks, edge_inputs, edge_targets, _) in enumerate(train_loader):
             images, masks, text_masks, edge_inputs, edge_targets = images.to(device), masks.to(device), text_masks.to(device), edge_inputs.to(device), edge_targets.to(device)
@@ -85,10 +88,13 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             # Feature matching loss 
             g_loss_fm = 0
             for j in range(len(dis_real_features)):
-                g_loss_fm += criterionFM(gen_fake_features[j], dis_real_features[j].detach())
+                g_loss_fm += criterionFM(gen_fake_features[j], dis_real_features[j].detach()) if criterionFM else 0
+
+            # Tversky loss
+            g_loss_tversky = criterionT(fake_edge_outputs, edge_targets) if criterionT else 0 
 
             # Combined loss
-            g_loss = (g_loss_gan * args.lambda_gan) + (g_loss_fm * args.lambda_fm)
+            g_loss = (g_loss_gan * args.lambda_gan) + (g_loss_fm * args.lambda_fm) + (g_loss_tversky * args.lambda_tversky)
 
             g_loss.backward()
             optimizerG.step()
@@ -97,11 +103,16 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             D_losses.append(d_loss.detach().item())
             G_losses.append(g_loss_gan.detach().item())
             fm_losses.append(g_loss_fm.detach().item())
+            tversky_losses.append(g_loss_tversky.detach().item())
+
 
             if (i+1)%args.batch_log_rate == 0:
-                print('[Epoch {}/{}, Batch {}/{}] FM loss: {}'
-                      .format(epoch, args.epochs, i+1, len(train_loader), np.mean(fm_losses)))
+                print('[Epoch {}/{}, Batch {}/{}] FM loss: {} Tversky loss: {}'
+                      .format(epoch, args.epochs, i+1, len(train_loader), np.mean(fm_losses), np.mean(tversky_losses)))
             
+        # Print epoch information
+        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, fm_losses, tversky_losses, train_hist)
+        
         # Save model
         save_checkpoint({'epoch': epoch,
                          'G_state_dict': netG.state_dict(),
@@ -114,8 +125,6 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
                          'train_hist': train_hist
                         }, epoch, args.checkpoint_path)
 
-        # Print epoch information
-        print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, fm_losses, train_hist)
 
         # Evaluate on validation set
         print('Evaluating on validation set...')
@@ -123,14 +132,16 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             save_path = args.save_samples_path+'epoch{}/'.format(epoch)
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
-            avg_precision, avg_recall = test(netG, val_loader, device, save_batches=args.save_samples_batches, save_path=save_path)
+            avg_precision, avg_recall, avg_tversky_loss = test(netG, val_loader, device, criterionT, save_batches=args.save_samples_batches, save_path=save_path)
         else:
-            avg_precision, avg_recall = test(netG, val_loader, device)
+            avg_precision, avg_recall, avg_tversky_loss = test(netG, val_loader, device, criterionT)
 
+        f1 = (2*avg_precision*avg_recall) / (avg_precision+avg_recall)
         train_hist['Precision'].append(avg_precision)
         train_hist['Recall'].append(avg_recall)
-        train_hist['F1'].append((2*avg_precision*avg_recall) / (avg_precision+avg_recall))
-        print("Precision: {} Recall: {} F1: {}\n".format(avg_precision, avg_recall, (2*avg_precision*avg_recall) / (avg_precision+avg_recall)))
+        train_hist['F1'].append(f1)
+        train_hist['Val_tversky_losses'].append(avg_tversky_loss)
+        print("Precision: {} Recall: {} F1: {} Tversky loss: {}\n".format(avg_precision, avg_recall, f1, avg_tversky_loss))
 
         # Save training history plot
         save_plots(train_hist, args.plot_path)

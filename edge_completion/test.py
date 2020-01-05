@@ -6,7 +6,7 @@ import os
 
 from metrics import EdgeAccuracy
 
-def test(netG, loader, device, save_batches=0, save_path=None):
+def test(netG, loader, device, criterionT, save_batches=0, save_path=None):
     with torch.no_grad(): 
         netG.eval()
 
@@ -14,6 +14,7 @@ def test(netG, loader, device, save_batches=0, save_path=None):
 
         precisions = []
         recalls = []
+        tversky_losses = []
         save_images_targets = []
         save_images_outputs = []
 
@@ -27,8 +28,12 @@ def test(netG, loader, device, save_batches=0, save_path=None):
             # Get precision and recall
             precision, recall = edgeacc(edge_targets * masks, edge_outputs * masks)
             
+            # Get tversky loss
+            tversky_loss = criterionT(edge_outputs, edge_targets) if criterionT else 0
+
             precisions.append(precision.item())
             recalls.append(recall.item())
+            tversky_losses.append(tversky_loss.item())
 
             # Save images
             if i < save_batches:
@@ -38,6 +43,7 @@ def test(netG, loader, device, save_batches=0, save_path=None):
             
         avg_precision = np.mean(precisions)
         avg_recall = np.mean(recalls)
+        avg_tversky_loss = np.mean(tversky_losses)
 
         # Save images to file
         if save_images_outputs:
@@ -46,4 +52,4 @@ def test(netG, loader, device, save_batches=0, save_path=None):
             for i, img in enumerate(save_images_outputs):
                 imsave(os.path.join(save_path, f'output_{i}.png'), img) 
 
-    return avg_precision, avg_recall
+    return avg_precision, avg_recall, avg_tversky_loss
