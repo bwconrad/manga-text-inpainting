@@ -35,7 +35,7 @@ def test(netG, loader, device, save_batches=0, save_path=None):
                 for j in range(edge_outputs.size(0)):
                     save_images_outputs.append(((edge_outputs[j].cpu().data.numpy().transpose(1, 2, 0))*255).astype('uint8')) # Generated edge map
                     save_images_targets.append(((edge_targets[j].cpu().data.numpy().transpose(1, 2, 0))*255).astype('uint8'))  # Corresponding corresponding ground truth edge map
-            break
+            
         avg_precision = np.mean(precisions)
         avg_recall = np.mean(recalls)
 
