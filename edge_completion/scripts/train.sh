@@ -1,5 +1,5 @@
 python main.py \
---data_path ../data/ \
+--data_path ../../data/ \
 --epochs 16 \
 --batch_size 8 \
 --gan_loss vanilla \

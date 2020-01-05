@@ -35,7 +35,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
                       'FM_losses': [],
                       'Precision': [], 
                       'Recall': [],
-                      'FM_val_losses': []}
+                      'F1': [],}
     start = time.time()
 
     print('\nStarting to train...')
@@ -101,7 +101,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
             if (i+1)%args.batch_log_rate == 0:
                 print('[Epoch {}/{}, Batch {}/{}] FM loss: {}'
                       .format(epoch, args.epochs, i+1, len(train_loader), np.mean(fm_losses)))
-            
+            break
         # Save model
         save_checkpoint({'epoch': epoch,
                          'G_state_dict': netG.state_dict(),
@@ -129,7 +129,8 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
 
         train_hist['Precision'].append(avg_precision)
         train_hist['Recall'].append(avg_recall)
-        print("Precision: {} Recall: {}\n".format(avg_precision, avg_recall))
+        train_hist['F1'].append((2*avg_precision*avg_recall) / (avg_precision+avg_recall))
+        print("Precision: {} Recall: {} F1: {}\n".format(avg_precision, avg_recall, (2*avg_precision*avg_recall) / (avg_precision+avg_recall)))
 
         # Save training history plot
         save_plots(train_hist, args.plot_path)
