@@ -113,19 +113,6 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
         # Print epoch information
         print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, fm_losses, tversky_losses, train_hist)
         
-        # Save model
-        save_checkpoint({'epoch': epoch,
-                         'G_state_dict': netG.state_dict(),
-                         'D_state_dict': netD.state_dict(),
-                         'optimizerG_state_dict' : optimizerG.state_dict(),
-                         'optimizerD_state_dict' : optimizerD.state_dict(),
-                         'schedulerG_state_dict' : schedulerG.state_dict() if schedulerG else None,
-                         'schedulerD_state_dict' : schedulerD.state_dict() if schedulerD else None,  
-                         'args': args,
-                         'train_hist': train_hist
-                        }, epoch, args.checkpoint_path)
-
-
         # Evaluate on validation set
         print('Evaluating on validation set...')
         if epoch%args.save_samples_rate == 0:
@@ -142,9 +129,22 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
         train_hist['F1'].append(f1)
         train_hist['Val_tversky_losses'].append(avg_tversky_loss)
         print("Precision: {} Recall: {} F1: {} Tversky loss: {}\n".format(avg_precision, avg_recall, f1, avg_tversky_loss))
+        
+        # Save model
+        save_checkpoint({'epoch': epoch,
+                         'G_state_dict': netG.state_dict(),
+                         'D_state_dict': netD.state_dict(),
+                         'optimizerG_state_dict' : optimizerG.state_dict(),
+                         'optimizerD_state_dict' : optimizerD.state_dict(),
+                         'schedulerG_state_dict' : schedulerG.state_dict() if schedulerG else None,
+                         'schedulerD_state_dict' : schedulerD.state_dict() if schedulerD else None,  
+                         'args': args,
+                         'train_hist': train_hist
+                        }, epoch, args.checkpoint_path)
+
 
         # Save training history plot
-        save_plots(train_hist, args.plot_path)
+        #save_plots(train_hist, args.plot_path)
 
         # Update lr schedulers
         if schedulerG:

@@ -22,4 +22,5 @@ python main.py \
 --spectral_norm_g \
 --ngf 32 \
 --ndf 32 \
+--resume ./results/text_mask_tversky/checkpoints/checkpoint_epoch19.pth.tar
 

@@ -57,16 +57,6 @@ def train(net, train_loader, val_loader, optimizer, scheduler, criterion,
         # Print epoch information
         print_epoch_stats(epoch, start_epoch, time.time(), losses, train_hist)
        
-        # Save model
-        save_checkpoint({'epoch': epoch,
-                         'state_dict': net.state_dict(),
-                         'optimizer_state_dict' : optimizer.state_dict(),
-                         'scheduler_state_dict' : scheduler.state_dict() if scheduler else None,
-                         'args': args,
-                         'train_hist': train_hist
-                        }, epoch, args.checkpoint_path)
-
-
         # Evaluate on validation set
         print('Evaluating on validation set...')
         if epoch%args.save_samples_rate == 0:
@@ -85,6 +75,17 @@ def train(net, train_loader, val_loader, optimizer, scheduler, criterion,
         train_hist['F1'].append(f1)
         train_hist['T_val_losses'].append(avg_t_loss)
         print("Precision: {} Recall: {} F1: {} Tversky Loss: {}\n".format(avg_precision, avg_recall, f1, avg_t_loss))
+        
+        # Save model
+        save_checkpoint({'epoch': epoch,
+                         'state_dict': net.state_dict(),
+                         'optimizer_state_dict' : optimizer.state_dict(),
+                         'scheduler_state_dict' : scheduler.state_dict() if scheduler else None,
+                         'args': args,
+                         'train_hist': train_hist
+                        }, epoch, args.checkpoint_path)
+
+
 
         # Save training history plot
         save_plots(train_hist, args.plot_path)

@@ -125,19 +125,6 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
         # Print epoch information
         print_epoch_stats(epoch, start_epoch, time.time(), D_losses, G_losses, l1_losses, perceptual_losses, style_losses, tv_losses, train_hist)
        
-        # Save model
-        save_checkpoint({'epoch': epoch,
-                         'G_state_dict': netG.state_dict(),
-                         'D_state_dict': netD.state_dict(),
-                         'optimizerG_state_dict' : optimizerG.state_dict(),
-                         'optimizerD_state_dict' : optimizerD.state_dict(),
-                         'schedulerG_state_dict' : schedulerG.state_dict() if schedulerG else None,
-                         'schedulerD_state_dict' : schedulerD.state_dict() if schedulerD else None,  
-                         'args': args,
-                         'train_hist': train_hist
-                        }, epoch, args.checkpoint_path)
-
-        
         # Evaluate on validation set
         print('Evaluating on validation set...')
         if epoch%args.save_samples_rate == 0:
@@ -151,6 +138,19 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
         train_hist['SSIM'].append(avg_ssim)
         train_hist['L1_val_losses'].append(avg_val_l1)
         print("PSRN: {} SSIM: {} L1: {}\n".format(avg_psrn, avg_ssim, avg_val_l1))
+        
+        # Save model
+        save_checkpoint({'epoch': epoch,
+                         'G_state_dict': netG.state_dict(),
+                         'D_state_dict': netD.state_dict(),
+                         'optimizerG_state_dict' : optimizerG.state_dict(),
+                         'optimizerD_state_dict' : optimizerD.state_dict(),
+                         'schedulerG_state_dict' : schedulerG.state_dict() if schedulerG else None,
+                         'schedulerD_state_dict' : schedulerD.state_dict() if schedulerD else None,  
+                         'args': args,
+                         'train_hist': train_hist
+                        }, epoch, args.checkpoint_path)
+
         
         # Save training history plot
         save_plots(train_hist, args.plot_path)
