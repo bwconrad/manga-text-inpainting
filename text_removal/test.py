@@ -21,7 +21,7 @@ def test(netG, loader, device, save_batches=0, save_path=None):
             
         # Measure psrn and ssim on entire val set
         for i, (real_inputs, real_targets, masks, text_masks, edges) in enumerate(loader):
-            real_inputs, real_targets, masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), text_masks.to(device), edges.to(device)
+            real_inputs, real_targets, masks, text_masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), text_masks.to(device), edges.to(device)
             
             # Pass images through generator
             fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1))
@@ -43,7 +43,7 @@ def test(netG, loader, device, save_batches=0, save_path=None):
                 for j in range(fake_targets.size(0)):
                     save_images_cleaned.append(((fake_targets[j].cpu().data.numpy().transpose(1, 2, 0)+1)*127.5).astype('uint8')) # Cleaned img
                     save_images_dirty.append(((real_inputs[j].cpu().data.numpy().transpose(1, 2, 0)+1)*127.5).astype('uint8'))  # Corresponding dirty img
-        
+            
         avg_psrn = np.mean(psrn_losses)
         avg_ssim = np.mean(ssim_losses)
         avg_l1 = np.mean(l1_losses)
