@@ -4,8 +4,6 @@ python create_edge_maps.py \
 --width 256 \
 --height 512 \
 --dilation 2 \
---spectral_norm_d \
 --spectral_norm_g \
 --ngf 32 \
---ndf 32 \
---resume results/1/checkpoints/checkpoint_epoch24.pth.tar \
+--resume results/text_mask_tversky/checkpoints/checkpoint_epoch28.pth.tar \

@@ -65,10 +65,6 @@ if args.resume:
 
     print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
-
-for i in train_hist.keys():
-  print(len(train_hist[i]))
-
 # Define loss functions
 criterionGAN = GANLoss(args.gan_loss).to(device)
 criterionFM = torch.nn.L1Loss() if args.use_fm_loss else None

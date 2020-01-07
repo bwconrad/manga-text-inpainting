@@ -55,7 +55,7 @@ class EdgeMangaDataset(data.Dataset):
         clean_img = self.loader(clean_path)
 
         # Load text mask
-        text_mask_path = self.root + 'mask/' + name
+        text_mask_path = self.root + 'masks/' + name
         text_mask = self.loader(text_mask_path)
 
         # Create the mask

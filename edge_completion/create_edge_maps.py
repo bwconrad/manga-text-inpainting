@@ -8,7 +8,7 @@ import os
 from metrics import EdgeAccuracy
 from utils import *
 from dataset import EdgeMangaDataset
-from models import EdgeGenerator, Discriminator
+from models import EdgeGenerator
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,14 +31,11 @@ print('\nInitializing models...')
 netG = EdgeGenerator(ngf=args.ngf, residual_blocks=args.n_blocks_g, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation)
 netG.to(device)
 
-netD = Discriminator(in_channels=3, ndf=args.ndf, use_sigmoid=args.gan_loss != 'lsgan', use_spectral_norm=args.spectral_norm_d)
-netD.to(device)
 
 print('\nLoading models from checkpoint {}'.format(args.resume))
 checkpoint = torch.load(args.resume)
 resume_args = checkpoint['args']
 netG.load_state_dict(checkpoint['G_state_dict'])
-netD.load_state_dict(checkpoint['D_state_dict'])
 print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
 for i, (dataset, loader) in enumerate([('val', val_loader), ('train', train_loader), ('test', test_loader)]):
@@ -58,11 +55,11 @@ for i, (dataset, loader) in enumerate([('val', val_loader), ('train', train_load
         save_images_outputs = []
 
         # Measure psrn and ssim on entire val set
-        for i, (images, masks, edge_inputs, edge_targets, names) in enumerate(loader):
-            images, masks, edge_inputs, edge_targets = images.to(device), masks.to(device), edge_inputs.to(device), edge_targets.to(device)
+        for i, (images, masks, text_masks, edge_inputs, edge_targets, names) in enumerate(loader):
+            images, masks, text_masks, edge_inputs, edge_targets = images.to(device), masks.to(device), text_masks.to(device), edge_inputs.to(device), edge_targets.to(device)
             
             # Pass images through generator
-            edge_outputs = netG(torch.cat((images, masks, edge_inputs), 1))
+            edge_outputs = netG(torch.cat((images, text_masks, edge_inputs), 1))
 
             # Get precision and recall
             precision, recall = edgeacc(edge_targets * masks, edge_outputs * masks)

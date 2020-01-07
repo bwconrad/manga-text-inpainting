@@ -1,6 +1,11 @@
 Epoch 20:
 D loss: 0.6927266689565668 G loss: 0.6939174026035783 FM loss: 0.019399184008608926 Tversky loss: 0.0109970395301532
-Best: Precision: 0.8888286006450653 Recall: 0.8712502572933832 F1: 0.8799516493354891 Tversky loss: 0.01161036491394043
+Best: Precision: 0.8888286006450653 Recall: 0.8712502572933832 F1: 0.8799516493354891 Tversky loss: 0.01161036491394043 (epoch 19)
+
+Epoch 32:
+D loss: 0.6926961054015965 G loss: 0.6940383763536047 FM loss: 0.02034219170531822 Tversky loss: 0.0105695361833902
+Best: Precision: 0.8996680003404617 Recall: 0.8767167180776596 F1: 0.8880440913952123 Tversky loss: 0.010757726033528646 (epoch 28)
+
 
 !python ./manga-text-inpainting/edge_completion/main.py \
 --data_path ./data/ \
@@ -19,8 +24,8 @@ Best: Precision: 0.8888286006450653 Recall: 0.8712502572933832 F1: 0.87995164933
 --beta_tversky 0.5 \
 --width 256 \
 --height 512 \
---lrG 0.0001 \
---lrD 0.00001 \
+--lrG 0.0001 \ (0.00001 after 20)
+--lrD 0.00001 \ (0.000001 after 20)
 --beta1 0 \
 --beta2 0.9 \
 --dilation 2 \
