@@ -20,11 +20,11 @@ def test(netG, loader, device, save_batches=0, save_path=None):
         save_images_dirty = []
             
         # Measure psrn and ssim on entire val set
-        for i, (real_inputs, real_targets, masks, edges) in enumerate(loader):
-            real_inputs, real_targets, masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), edges.to(device)
+        for i, (real_inputs, real_targets, masks, text_masks, edges) in enumerate(loader):
+            real_inputs, real_targets, masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), text_masks.to(device), edges.to(device)
             
             # Pass images through generator
-            fake_targets = netG(torch.cat((real_inputs, masks, edges), 1))
+            fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1))
 
             # Get SSIM
             ssim_losses.append(ssim(fake_targets.detach(), real_targets).item())

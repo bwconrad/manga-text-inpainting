@@ -1,5 +1,5 @@
 python main.py \
---data_path ./data/ \
+--data_path ../data/ \
 --epochs 8 \
 --batch_size 2 \
 --ngf 32 \

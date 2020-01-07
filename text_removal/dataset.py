@@ -48,10 +48,15 @@ class MangaDataset(data.Dataset):
 
     def __getitem__(self, index):
         # Load the clean and dirty images
-        dirty_path = self.root + 'dirty/' + self.imgs[index]
+        file = self.imgs[index]
+        dirty_path = self.root + 'dirty/' + file
         dirty_img = self.loader(dirty_path)
-        clean_path = self.root + 'clean/' + self.imgs[index]
+        clean_path = self.root + 'clean/' + file
         clean_img = self.loader(clean_path)
+
+        # Load text mask
+        text_mask_path = self.root + 'masks/' + file
+        text_mask = self.loader(text_mask_path)
 
         # Create the mask
         bboxes = self.bboxes[index]
@@ -92,13 +97,15 @@ class MangaDataset(data.Dataset):
         mask = self.mask_resize(mask)
         mask = self.tensor(mask)
 
+        text_mask = self.tensor(text_mask)
+        
         edge = torch.Tensor()
         if self.edges:
-            edge_path = self.root + 'edges/' + self.imgs[index]
+            edge_path = self.root + 'edges/' + file
             edge = self.loader(edge_path)
             edge = self.tensor(edge)
 
-        return dirty_img, clean_img, mask, edge
+        return dirty_img, clean_img, mask, text_mask, edge
 
     def __len__(self):
         return len(self.imgs)

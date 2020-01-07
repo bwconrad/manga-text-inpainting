@@ -54,9 +54,9 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
         style_losses = []
         tv_losses = []
 
-        for i, (real_inputs, real_targets, masks, edges) in enumerate(train_loader):
-            real_inputs, real_targets, masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), edges.to(device)
-            fake_targets = netG(torch.cat((real_inputs, masks, edges), 1))
+        for i, (real_inputs, real_targets, masks, text_masks, edges) in enumerate(train_loader):
+            real_inputs, real_targets, masks, text_masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), text_masks.to(device), edges.to(device)
+            fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1))
 
             ############
             # Update D #
@@ -65,11 +65,11 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
             optimizerD.zero_grad()
 
             # Real loss
-            validity_real = netD(torch.cat((real_inputs, masks, edges), 1))
+            validity_real = netD(torch.cat((real_inputs, text_masks, edges), 1))
             d_real_loss = criterionGAN(validity_real, target_is_real=True)
 
             # Fake loss
-            validity_fake = netD(torch.cat((fake_targets.detach(), masks, edges), 1))
+            validity_fake = netD(torch.cat((fake_targets.detach(), text_masks, edges), 1))
             d_fake_loss = criterionGAN(validity_fake, target_is_real=False)
 
             # Combined loss
@@ -84,7 +84,7 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
             optimizerG.zero_grad()   
 
             # GAN loss
-            validity_fake = netD(torch.cat((fake_targets, masks, edges), 1))  
+            validity_fake = netD(torch.cat((fake_targets, text_masks, edges), 1))  
             g_loss_gan = criterionGAN(validity_fake, target_is_real=True)                    
             
             # L1 loss - scaled by size of masked area
@@ -97,7 +97,7 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
             g_loss_style = criterionStyle(fake_targets * masks, real_targets * masks, vgg) if criterionStyle else 0
             
             # Total variation loss
-            g_loss_tv = criterionTV(fake_targets*masks + real_targets*(1-masks)) if criterionTV else 0
+            g_loss_tv = criterionTV(fake_targets*text_masks + real_targets*(1-text_masks)) if criterionTV else 0
 
             # Combined loss
             g_loss = (g_loss_gan * args.lambda_gan) + (g_loss_l1 * args.lambda_l1) + \

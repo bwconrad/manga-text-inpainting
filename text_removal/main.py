@@ -2,7 +2,6 @@ import torch
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import sys
-#from torchsummary import summary
 
 from utils import *
 from train import train_gan
@@ -19,11 +18,11 @@ args = get_args()
 print('Loading data...')
 train_dataset = MangaDataset(args.data_path + 'train/', 'train.csv', height=args.height, width=args.width, edges=args.edges)
 val_dataset = MangaDataset(args.data_path + 'val/', 'val.csv', height=args.height, width=args.width, edges=args.edges)
-test_dataset = MangaDataset(args.data_path + 'test/', 'test.csv', height=args.height, width=args.width, edges=args.edges)
+#test_dataset = MangaDataset(args.data_path + 'test/', 'test.csv', height=args.height, width=args.width, edges=args.edges)
 
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
 val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
+#test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers)
 
 # Setup models
 print('\nInitializing models...')
