@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torchvision.models as models
 import functools
 import numpy as np
@@ -146,7 +147,7 @@ class LSTA(nn.Module):
         #return out, attention
 
 class GlobalGenerator(nn.Module):
-    def __init__(self, input_nc, output_nc, ngf=64, n_downsampling=3, n_blocks=9, norm_layer=nn.BatchNorm2d, 
+    def __init__(self, input_nc, output_nc, ngf=64, n_downsampling=3, n_blocks=9, norm_layer=nn.InstanceNorm2d, 
                  use_dropout=False, use_spectral_norm=False, dilation=1, kernel_size=3):
         assert(n_blocks >= 0)
         super(GlobalGenerator, self).__init__()        
@@ -175,9 +176,9 @@ class GlobalGenerator(nn.Module):
         for i in range(n_downsampling):
             mult = 2**(n_downsampling - i)
             model += [spectral_norm(nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2), kernel_size=kernel_size, stride=2, padding=1, 
-                      output_padding=1 if kernel_size==3 else 0), use_spectral_norm),
-                       norm_layer(int(ngf * mult / 2)), 
-                       activation]
+                                    output_padding=1 if kernel_size==3 else 0), use_spectral_norm),
+                      norm_layer(int(ngf * mult / 2)), 
+                      activation]
 
         model += [nn.ReflectionPad2d(3), 
                   nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0), 
@@ -189,69 +190,101 @@ class GlobalGenerator(nn.Module):
     def forward(self, input):
         return self.model(input) 
     
-class AttentionGenerator(nn.Module):
-    def __init__(self, input_nc, output_nc, ngf=64, n_blocks=7, norm_layer=nn.BatchNorm2d,
+class UNetGenerator(nn.Module):
+    def __init__(self, input_nc, output_nc, ngf=64, n_blocks=7, norm_layer=nn.InstanceNorm2d, n_downsampling=2,
                  use_dropout=False, use_spectral_norm=False, dilation=1, kernel_size=3):
-        super(AttentionGenerator, self).__init__()
+        super(UNetGenerator, self).__init__()
+        activation = nn.ReLU(True)   
 
         self.encoder1 = nn.Sequential(
             nn.ReflectionPad2d(3),
             nn.Conv2d(in_channels=input_nc, out_channels=ngf, kernel_size=7, padding=0),
-            nn.InstanceNorm2d(64, track_running_stats=False),
-            nn.ReLU(True))
+            nn.InstanceNorm2d(ngf, track_running_stats=False),
+            activation
+        )
 
         self.encoder2 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1),
-            nn.InstanceNorm2d(128, track_running_stats=False),
-            nn.ReLU(True),
+            nn.Conv2d(in_channels=ngf, out_channels=ngf*2, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(ngf*2, track_running_stats=False),
+            activation,
         )
 
         self.encoder3 = nn.Sequential(
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1),
-            nn.InstanceNorm2d(256, track_running_stats=False),
-            nn.ReLU(True)
+            nn.Conv2d(in_channels=ngf*2, out_channels=ngf*4, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(ngf*4, track_running_stats=False),
+            activation
         )
 
-        self.fushion1 = nn.Sequential(
-            nn.Conv2d(in_channels=256,out_channels=256,kernel_size=1),
-            nn.InstanceNorm2d(256,track_running_stats=False),
-            nn.ReLU(True)
+        self.fusion1 = nn.Sequential(
+            nn.Conv2d(in_channels=ngf*8,out_channels=ngf*4,kernel_size=1),
+            nn.InstanceNorm2d(ngf*4,track_running_stats=False),
+            activation
         )
 
-        self.fushion2 = nn.Sequential(
-            nn.Conv2d(in_channels=128,out_channels=128,kernel_size=1),
-            nn.InstanceNorm2d(128,track_running_stats=False),
-            nn.ReLU(True)
+        self.fusion2 = nn.Sequential(
+            nn.Conv2d(in_channels=ngf*4,out_channels=ngf*2,kernel_size=1),
+            nn.InstanceNorm2d(ngf*2,track_running_stats=False),
+            activation
         )
+
+        self.fusion3 = nn.Sequential(
+            nn.Conv2d(in_channels=ngf*2,out_channels=ngf,kernel_size=1),
+            nn.InstanceNorm2d(ngf,track_running_stats=False),
+            activation
+        )
+        
 
         self.decoder1 = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=4, stride=2, padding=1),
-            nn.InstanceNorm2d(128, track_running_stats=False),
-            nn.ReLU(True),
+            nn.ConvTranspose2d(in_channels=ngf*4, out_channels=ngf*2, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(ngf*2, track_running_stats=False),
+            activation,
         )
 
         self.decoder2 = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=256, out_channels=64, kernel_size=4, stride=2, padding=1),
-            nn.InstanceNorm2d(64, track_running_stats=False),
-            nn.ReLU(True),
+            nn.ConvTranspose2d(in_channels=ngf*2, out_channels=ngf, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(ngf, track_running_stats=False),
+            activation,
         )
 
         self.decoder3 = nn.Sequential(
             nn.ReflectionPad2d(3),
-            nn.Conv2d(in_channels=128, out_channels=3, kernel_size=7, padding=0),
+            nn.Conv2d(in_channels=ngf, out_channels=1, kernel_size=7, padding=0),
+            nn.Tanh()
         )
 
         blocks = []
-        for _ in range(residual_blocks):
-            block = ResnetBlock(256, 2)
+        for _ in range(n_blocks):
+            block = ResnetBlock(ngf*4, padding_type='reflect', activation=activation, norm_layer=norm_layer,
+                                  use_dropout=use_dropout, use_spectral_norm = use_spectral_norm, dilation=dilation)
             blocks.append(block)
 
         self.middle = nn.Sequential(*blocks)
 
-        self.auto_attn = Auto_Attn(input_nc=256, norm_layer=None)
+    def downsample_mask(self, mask, degree):
+        return F.interpolate(mask, size=[int(mask.shape[2] / degree), int(mask.shape[3] / degree)],
+                                     mode='nearest')
 
-        if init_weights:
-            self.init_weights()
+    def forward(self, input, mask):
+        e1 = self.encoder1(input)
+        e2 = self.encoder2(e1)
+        e3 = self.encoder3(e2)
+        
+        output = self.middle(e3)
+
+        quarter_mask = self.downsample_mask(mask, 4)
+        output = self.fusion1(torch.cat((e3*(1-quarter_mask), output), dim=1))
+        output = self.decoder1(output)
+
+        half_mask = self.downsample_mask(mask, 2)
+        output = self.fusion2(torch.cat((e2*(1-half_mask), output), dim=1))
+        output = self.decoder2(output)
+
+        output = self.fusion3(torch.cat((e1*(1-mask), output), dim=1))
+        output = self.decoder3(output)
+
+        return output
+
+
 
 class PatchDiscriminator(nn.Module):
     def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, use_spectral_norm=False, use_attention=False):

@@ -5,6 +5,7 @@ python main.py \
 --ngf 32 \
 --ndf 32 \
 --gan_loss lsgan \
+--generator unet \
 --discriminator patch \
 --scheduler none \
 --use_l1_loss \

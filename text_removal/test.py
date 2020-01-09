@@ -7,7 +7,7 @@ import os
 from metrics import ssim
 
 
-def test(netG, loader, device, save_batches=0, save_path=None):
+def test(netG, loader, device, args, save_batches=0, save_path=None):
     with torch.no_grad(): 
         netG.eval()
 
@@ -24,7 +24,10 @@ def test(netG, loader, device, save_batches=0, save_path=None):
             real_inputs, real_targets, masks, text_masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), text_masks.to(device), edges.to(device)
             
             # Pass images through generator
-            fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1))
+            if args.generator == 'unet':
+                fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1), masks)
+            else:
+                fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1))
 
             # Get SSIM
             ssim_losses.append(ssim(fake_targets.detach(), real_targets).item())

@@ -56,7 +56,10 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
 
         for i, (real_inputs, real_targets, masks, text_masks, edges) in enumerate(train_loader):
             real_inputs, real_targets, masks, text_masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), text_masks.to(device), edges.to(device)
-            fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1))
+            if args.generator == 'unet':
+                fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1), text_masks)
+            else:
+                fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1))
 
             ############
             # Update D #
@@ -131,9 +134,9 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
             save_path = args.save_samples_path+'epoch{}/'.format(epoch)
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
-            avg_psrn, avg_ssim, avg_val_l1 = test(netG, val_loader, device, save_batches=args.save_samples_batches, save_path=save_path)
+            avg_psrn, avg_ssim, avg_val_l1 = test(netG, val_loader, device, args, save_batches=args.save_samples_batches, save_path=save_path)
         else:
-            avg_psrn, avg_ssim, avg_val_l1 = test(netG, val_loader, device)
+            avg_psrn, avg_ssim, avg_val_l1 = test(netG, val_loader, device, args)
         train_hist['PSRN'].append(avg_psrn)
         train_hist['SSIM'].append(avg_ssim)
         train_hist['L1_val_losses'].append(avg_val_l1)
