@@ -163,7 +163,7 @@ def get_args():
     parser.add_argument('--archive', dest='archive', action='store_true', default=False, help='save samples and checkpoints as archive')
 
     # Evaluation arguments
-    parser.add_argument('--eval_dataset', required=True, help='train | test | val')
+    parser.add_argument('--eval_dataset', default='test', help='train | test | val')
     parser.add_argument('--eval_save', dest='eval_save', action='store_true', default=False, help='save outputs during evaluation')
 
     
