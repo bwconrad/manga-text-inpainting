@@ -28,7 +28,7 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_si
 # Setup models
 print('\nInitializing models...')
 
-netG = Generator(ngf=args.ngf, residual_blocks=args.n_blocks_g, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation)
+netG = Generator(ngf=args.ngf, residual_blocks=args.n_blocks, use_spectral_norm=args.spectral_norm, dilation=args.dilation)
 netG.to(device)
 
 
@@ -38,7 +38,7 @@ resume_args = checkpoint['args']
 netG.load_state_dict(checkpoint['state_dict'])
 print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
-for i, (dataset, loader) in enumerate([('val', val_loader), ('train', train_loader), ('test', test_loader)]):
+for i, (dataset, loader) in enumerate([('val', val_loader), ('test', test_loader), ('train', train_loader)]):
     print('Evaluating on {} dataset...'.format(dataset))
     save_path = './' + dataset + '/'
     if not os.path.exists(save_path):
@@ -51,8 +51,6 @@ for i, (dataset, loader) in enumerate([('val', val_loader), ('train', train_load
 
         precisions = []
         recalls = []
-        save_images_targets = []
-        save_images_outputs = []
 
         # Measure psrn and ssim on entire val set
         for i, (images, masks, text_masks, names) in enumerate(loader):

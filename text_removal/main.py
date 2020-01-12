@@ -27,8 +27,6 @@ val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size
 # Setup models
 print('\nInitializing models...')
 netG = get_generator(args)
-#netG = GlobalGenerator(input_nc=2 if not args.edges else 3, output_nc=1, n_downsampling=args.n_downsamples_g, n_blocks=args.n_blocks_g, ngf=args.ngf, norm_layer=norm_layer,
-#                       use_dropout=args.dropout, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation, kernel_size=args.kernel_size_g)
 netG.to(device)
 init_weights(netG, args.init_type, init_gain=args.init_gain)
 

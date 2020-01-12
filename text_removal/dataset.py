@@ -105,7 +105,7 @@ class MangaDataset(data.Dataset):
             edge = self.loader(edge_path)
             edge = self.tensor(edge)
 
-        return dirty_img, clean_img, mask, text_mask, edge
+        return dirty_img, clean_img, mask, text_mask, edge, file
 
     def __len__(self):
         return len(self.imgs)

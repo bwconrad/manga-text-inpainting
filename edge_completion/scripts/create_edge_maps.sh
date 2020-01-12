@@ -1,8 +1,8 @@
 python create_edge_maps.py \
 --data_path ../data/ \
---batch_size 64 \
---width 256 \
---height 512 \
+--batch_size 16 \
+--width 512 \
+--height 1024 \
 --dilation 2 \
 --spectral_norm_g \
 --ngf 32 \

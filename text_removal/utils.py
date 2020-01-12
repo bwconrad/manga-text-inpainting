@@ -123,7 +123,7 @@ def get_args():
     parser.add_argument('--n_blocks_g', type=int, default=9, help='# of resblocks in generator')
     parser.add_argument('--n_layers_d', type=int, default=3, help='# of layers in discriminator')
     parser.add_argument('--num_d', type=int, default=3, help='# of dicriminators in multiscale discriminator')
-    parser.add_argument('--kernel_size_g', type=int, default=3, help='kernel width in encoder/decoder [3 | 4]')
+    parser.add_argument('--kernel_size_g', type=int, default=4, help='kernel width in encoder/decoder [3 | 4]')
     parser.add_argument('--attention_g', dest='attention_g', action='store_true', default=False, help='use attention in the generator')
     parser.add_argument('--attention_d', dest='attention_d', action='store_true', default=False, help='use attention in the discriminator')
     parser.add_argument('--edges', dest='edges', action='store_true', default=False, help='use edge map')
@@ -162,6 +162,11 @@ def get_args():
     parser.add_argument('--save_samples_batches', type=int, default=4, help='number of sample batches to save')
     parser.add_argument('--archive', dest='archive', action='store_true', default=False, help='save samples and checkpoints as archive')
 
+    # Evaluation arguments
+    parser.add_argument('--eval_dataset', required=True, help='train | test | val')
+    parser.add_argument('--eval_save', dest='eval_save', action='store_true', default=False, help='save outputs during evaluation')
+
+    
 
     args = parser.parse_args()
 
@@ -194,7 +199,7 @@ def get_generator(args):
         return UNetGenerator(input_nc=2 if not args.edges else 3, output_nc=1, n_downsampling=args.n_downsamples_g, n_blocks=args.n_blocks_g, ngf=args.ngf, norm_layer=norm_layer,
                        use_dropout=args.dropout, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation, kernel_size=args.kernel_size_g)
     else:
-        raise NotImplementedError('discriminator [{}] is not implemented'.format(args.generator))
+        raise NotImplementedError('generator [{}] is not implemented'.format(args.generator))
 
 def calculate_time(start, end):
     '''

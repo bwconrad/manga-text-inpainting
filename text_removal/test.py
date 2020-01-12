@@ -20,7 +20,7 @@ def test(netG, loader, device, args, save_batches=0, save_path=None):
         save_images_dirty = []
             
         # Measure psrn and ssim on entire val set
-        for i, (real_inputs, real_targets, masks, text_masks, edges) in enumerate(loader):
+        for i, (real_inputs, real_targets, masks, text_masks, edges, _) in enumerate(loader):
             real_inputs, real_targets, masks, text_masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), text_masks.to(device), edges.to(device)
             
             # Pass images through generator

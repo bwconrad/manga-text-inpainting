@@ -148,7 +148,7 @@ class LSTA(nn.Module):
 
 class GlobalGenerator(nn.Module):
     def __init__(self, input_nc, output_nc, ngf=64, n_downsampling=3, n_blocks=9, norm_layer=nn.InstanceNorm2d, 
-                 use_dropout=False, use_spectral_norm=False, dilation=1, kernel_size=3):
+                 use_dropout=False, use_spectral_norm=False, dilation=1, kernel_size=4):
         assert(n_blocks >= 0)
         super(GlobalGenerator, self).__init__()        
         activation = nn.ReLU(True)        
@@ -283,7 +283,6 @@ class UNetGenerator(nn.Module):
         output = self.decoder3(output)
 
         return output
-
 
 
 class PatchDiscriminator(nn.Module):

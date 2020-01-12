@@ -54,7 +54,7 @@ def train_gan(netG, netD, vgg, train_loader, val_loader, optimizerG, optimizerD,
         style_losses = []
         tv_losses = []
 
-        for i, (real_inputs, real_targets, masks, text_masks, edges) in enumerate(train_loader):
+        for i, (real_inputs, real_targets, masks, text_masks, edges, _) in enumerate(train_loader):
             real_inputs, real_targets, masks, text_masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), text_masks.to(device), edges.to(device)
             if args.generator == 'unet':
                 fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1), text_masks)
