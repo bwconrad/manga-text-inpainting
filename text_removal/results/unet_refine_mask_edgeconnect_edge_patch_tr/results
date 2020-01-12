@@ -1,0 +1,37 @@
+Epoch 38:
+D loss: 0.002025794613538002 G loss: 0.9971617493301664 L1 loss: 0.07723596187692562 Perceptual loss: 0.2195509710026204 Style loss: 0.00012846688619616114 TV loss: 0.15706597433269498
+PSRN: 26.234961046227617 SSIM: 0.9752268781264622 L1: 0.11379095571736494 (epoch34)
+
+!python ./manga-text-inpainting/text_removal/main.py \
+--data_path ./data/ \
+--epochs 40 \
+--batch_size 8 \
+--ngf 32 \
+--ndf 32 \
+--gan_loss lsgan \
+--generator unet \
+--discriminator patch \
+--scheduler none \
+--use_l1_loss \
+--use_perceptual_loss \
+--use_style_loss \
+--use_tv_loss \
+--lambda_gan 0.01 \
+--lambda_l1 1 \
+--lambda_perceptual 0.1 \
+--lambda_style 250 \
+--lambda_tv 0.1 \
+--width 256 \
+--height 512 \
+--n_downsamples_g 2 \
+--lrG 0.0001 \ (0.00001 after 20)
+--lrD 0.00001 \ (0.000001 after 20)
+--beta1 0 \
+--beta2 0.9 \
+--dilation 2 \
+--norm instance \
+--spectral_norm_d \
+--kernel_size_g 4 \
+--edges \
+--checkpoint_path ./drive/'My Drive'/ \
+--resume ./drive/'My Drive'/checkpoint_epoch24.pth.tar

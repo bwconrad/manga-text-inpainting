@@ -120,6 +120,7 @@ class LSTA(nn.Module):
         '''
         inputs :
             x : input feature maps( B X C X W X H)
+            pre : skip connection feature maps
         returns :
             out : self attention value + input feature
             attention: B X N X N (N is Width*Height)
@@ -215,24 +216,7 @@ class UNetGenerator(nn.Module):
             activation
         )
 
-        self.fusion1 = nn.Sequential(
-            nn.Conv2d(in_channels=ngf*8,out_channels=ngf*4,kernel_size=1),
-            nn.InstanceNorm2d(ngf*4,track_running_stats=False),
-            activation
-        )
-
-        self.fusion2 = nn.Sequential(
-            nn.Conv2d(in_channels=ngf*4,out_channels=ngf*2,kernel_size=1),
-            nn.InstanceNorm2d(ngf*2,track_running_stats=False),
-            activation
-        )
-
-        self.fusion3 = nn.Sequential(
-            nn.Conv2d(in_channels=ngf*2,out_channels=ngf,kernel_size=1),
-            nn.InstanceNorm2d(ngf,track_running_stats=False),
-            activation
-        )
-        
+        self.attention = LSTA(input_nc=ngf*4, norm_layer=None)
 
         self.decoder1 = nn.Sequential(
             nn.ConvTranspose2d(in_channels=ngf*4, out_channels=ngf*2, kernel_size=4, stride=2, padding=1),
@@ -240,15 +224,27 @@ class UNetGenerator(nn.Module):
             activation,
         )
 
+        self.fusion1 = nn.Sequential(
+            nn.Conv2d(in_channels=ngf*4, out_channels=ngf*4, kernel_size=1),
+            nn.InstanceNorm2d(ngf*4,track_running_stats=False),
+            activation
+        )
+
         self.decoder2 = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=ngf*2, out_channels=ngf, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(in_channels=ngf*4, out_channels=ngf, kernel_size=4, stride=2, padding=1),
             nn.InstanceNorm2d(ngf, track_running_stats=False),
             activation,
         )
 
+        self.fusion2 = nn.Sequential(
+            nn.Conv2d(in_channels=ngf*2, out_channels=ngf*2, kernel_size=1),
+            nn.InstanceNorm2d(ngf*2,track_running_stats=False),
+            activation
+        )
+       
         self.decoder3 = nn.Sequential(
             nn.ReflectionPad2d(3),
-            nn.Conv2d(in_channels=ngf, out_channels=1, kernel_size=7, padding=0),
+            nn.Conv2d(in_channels=ngf*2, out_channels=1, kernel_size=7, padding=0),
             nn.Tanh()
         )
 
@@ -272,14 +268,14 @@ class UNetGenerator(nn.Module):
         output = self.middle(e3)
 
         quarter_mask = self.downsample_mask(mask, 4)
-        output = self.fusion1(torch.cat((e3*(1-quarter_mask), output), dim=1))
+        output = self.attention(output, e3, quarter_mask)
         output = self.decoder1(output)
 
         half_mask = self.downsample_mask(mask, 2)
-        output = self.fusion2(torch.cat((e2*(1-half_mask), output), dim=1))
+        output = self.fusion1(torch.cat((e2*(1-half_mask), output), dim=1))
         output = self.decoder2(output)
 
-        output = self.fusion3(torch.cat((e1*(1-mask), output), dim=1))
+        output = self.fusion2(torch.cat((e1*(1-mask), output), dim=1))
         output = self.decoder3(output)
 
         return output
