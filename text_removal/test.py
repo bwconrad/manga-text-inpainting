@@ -25,7 +25,7 @@ def test(netG, loader, device, args, save_batches=0, save_path=None):
             
             # Pass images through generator
             if args.generator == 'unet':
-                fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1), masks)
+                fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1), text_masks)
             else:
                 fake_targets = netG(torch.cat((real_inputs, text_masks, edges), 1))
 
