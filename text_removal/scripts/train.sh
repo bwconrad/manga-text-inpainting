@@ -20,6 +20,7 @@ python main.py \
 --width 256 \
 --height 512 \
 --n_downsamples_g 2 \
+--n_blocks_g 9 \
 --lrG 0.0002 \
 --lrD 0.00002 \
 --beta1 0 \
@@ -29,3 +30,4 @@ python main.py \
 --kernel_size_g 4 \
 --spectral_norm_d \
 --edges \
+

@@ -181,6 +181,8 @@ def get_discriminator(args):
     if args.discriminator == 'pixel':
         return PixelDiscriminator(input_nc=2 if not args.edges else 3, ndf=args.ndf, norm_layer=norm_layer)
     elif args.discriminator == 'patch':
+        if args.attention_d:
+            print('Using attention in D')
         return PatchDiscriminator(input_nc=2 if not args.edges else 3, ndf=args.ndf, norm_layer=norm_layer, n_layers=args.n_layers_d, use_spectral_norm = args.spectral_norm_d,
                                   use_attention=args.attention_d)
     elif args.discriminator == 'multi':
