@@ -1,18 +1,18 @@
 python eval.py \
 --data_path ../data/ \
---batch_size 16 \
+--batch_size 14 \
 --ngf 32 \
 --ndf 32 \
---generator unet \
+--generator regular \
 --discriminator patch \
---width 256 \
---height 512 \
+--width 512 \
+--height 1024 \
 --n_downsamples_g 2 \
 --norm instance \
 --dilation 2 \
---kernel_size_g 4 \
+--kernel_size_g 3 \
 --spectral_norm_d \
 --edges \
---eval_dataset val \
+--eval_dataset test \
 --eval_save \
---resume results/unet_refine_mask_edgeconnect_edge_patch_tr/checkpoints/checkpoint_epoch34.pth.tar
+--resume results/refine_mask_edgeconnect_edge_patch_tr/checkpoints/checkpoint_epoch41.pth.tar

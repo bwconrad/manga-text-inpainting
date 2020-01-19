@@ -1,0 +1,28 @@
+Starting with epoch48:
+
+Epoch 71:
+Tversky loss: 0.023655748236011832
+Precision: 0.9188190863529841 Recall: 0.9919325711329778 F1: 0.9539770123045047 Tversky Loss: 0.023736244042714436 (epoch 71)
+
+Epoch 80:
+Tversky loss: 0.022309427880715653
+Precision: 0.9226516741514206 Recall: 0.99185871164004 F1: 0.9560043211131855 Tversky Loss: 0.0229287056128184 (epoch 77, best t-loss)
+Precision: 0.9296011789639791 Recall: 0.9891081833839417 F1: 0.9584319036953786 Tversky Loss: 0.023539113998413085 (epoch 78. best f1)
+
+!python ./manga-text-inpainting/mask_refine/main.py \
+--data_path ./data/ \
+--epochs 52 \
+--batch_size 6 \
+--ngf 32 \
+--scheduler none \
+--t_alpha 0.2 \
+--t_beta 0.8 \
+--width 512 \
+--height 1024 \
+--lr 0.0001 \
+--beta1 0 \
+--beta2 0.9 \
+--dilation 2 \
+--spectral_norm \
+--checkpoint_path ./drive/'My Drive'/ \
+--resume ./drive/'My Drive'/checkpoint_epoch48.pth.tar

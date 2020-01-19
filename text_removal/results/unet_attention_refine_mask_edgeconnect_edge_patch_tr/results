@@ -1,12 +1,12 @@
-Epoch 38:
-D loss: 0.002025794613538002 G loss: 0.9971617493301664 L1 loss: 0.07723596187692562 Perceptual loss: 0.2195509710026204 Style loss: 0.00012846688619616114 TV loss: 0.15706597433269498
-PSRN: 29.25488649455475 SSIM: 0.9835560468832651 L1 Loss: 0.09470670541127522 (epoch38)
-29.246802351970523 SSIM: 0.9855667408307394 L1 Loss: 0.07173271973927815 (epoch34)
+Epoch 45:
+D loss: 0.001487062836340841 G loss: 0.9982701997981113 L1 loss: 0.06530423474012531 Perceptual loss: 0.185646790635382 Style loss: 0.00011428142358254834 TV loss: 0.1571355581453383
+PSRN: 29.61260188934265 SSIM: 0.986949075460434 L1: 0.06415077203884721 (epoch 44)
+PSRN: 29.489688328307633 SSIM: 0.9871081544458866 L1: 0.05779285818338394 (epoch 41)
 
 !python ./manga-text-inpainting/text_removal/main.py \
 --data_path ./data/ \
---epochs 40 \
---batch_size 8 \
+--epochs 45 \
+--batch_size 6 \
 --ngf 32 \
 --ndf 32 \
 --gan_loss lsgan \
@@ -35,4 +35,4 @@ PSRN: 29.25488649455475 SSIM: 0.9835560468832651 L1 Loss: 0.09470670541127522 (e
 --kernel_size_g 4 \
 --edges \
 --checkpoint_path ./drive/'My Drive'/ \
---resume ./drive/'My Drive'/checkpoint_epoch24.pth.tar
+--resume ./drive/'My Drive'/checkpoint_epoch36.pth.tar

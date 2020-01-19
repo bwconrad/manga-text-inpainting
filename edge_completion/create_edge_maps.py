@@ -36,9 +36,9 @@ resume_args = checkpoint['args']
 netG.load_state_dict(checkpoint['G_state_dict'])
 print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
-for i, (dataset, loader) in enumerate([('val', val_loader), ]):
+for i, (dataset, loader) in enumerate([('test', test_loader), ]):
     print('Evaluating on {} dataset...'.format(dataset))
-    save_path = './' + dataset + '/'
+    save_path = './output/eval/' + dataset + '/'
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     
@@ -50,7 +50,6 @@ for i, (dataset, loader) in enumerate([('val', val_loader), ]):
         precisions = []
         recalls = []
 
-        # Measure psrn and ssim on entire val set
         for i, (images, masks, text_masks, edge_inputs, edge_targets, names) in enumerate(loader):
             images, masks, text_masks, edge_inputs, edge_targets = images.to(device), masks.to(device), text_masks.to(device), edge_inputs.to(device), edge_targets.to(device)
             

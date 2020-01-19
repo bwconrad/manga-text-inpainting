@@ -1,6 +1,0 @@
-Validation results on 512x1048:
-
-tversky_0.2/checkpoints/checkpoint_epoch46.pth.tar
-val dataset precision: 0.9521469616889954 recall: 0.8317338875929514
-
-

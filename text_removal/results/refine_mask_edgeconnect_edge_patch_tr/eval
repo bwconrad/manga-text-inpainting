@@ -1,4 +1,4 @@
-Validation results on 512x1024
-
+512x1024:
 refine_mask_edgeconnect_edge_patch_tr/checkpoints/checkpoint_epoch41.pth.tar
+test dataset PSRN: 24.977607664749737 SSIM: 0.9691386996164255 L1 Loss: 0.14521176795490454
 val dataset PSRN: 25.218395898005273 SSIM: 0.9741217128435771 L1 Loss: 0.1272839251657327

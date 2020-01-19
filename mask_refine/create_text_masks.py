@@ -40,7 +40,7 @@ print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch'
 
 for i, (dataset, loader) in enumerate([('val', val_loader), ('test', test_loader), ('train', train_loader)]):
     print('Evaluating on {} dataset...'.format(dataset))
-    save_path = './' + dataset + '/'
+    save_path = './output/eval/' + dataset + '/'
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     
@@ -52,7 +52,6 @@ for i, (dataset, loader) in enumerate([('val', val_loader), ('test', test_loader
         precisions = []
         recalls = []
 
-        # Measure psrn and ssim on entire val set
         for i, (images, masks, text_masks, names) in enumerate(loader):
             images, masks, text_masks = images.to(device), masks.to(device), text_masks.to(device)
             

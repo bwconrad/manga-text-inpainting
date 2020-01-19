@@ -1,4 +1,5 @@
-Validation results on 512x1024
-
+512x1024:
 text_mask_tversky/checkpoints/checkpoint_epoch28.pth.tar
-precision: 0.9316747927665711 recall: 0.9172834833463033
+validation: precision: 0.9316747927665711 recall: 0.9172834833463033
+test dataset precision: 0.9320850871144769 recall: 0.9182205722931235
+

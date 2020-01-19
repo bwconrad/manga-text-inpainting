@@ -46,7 +46,7 @@ print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch'
 
 
 print('Evaluating on {} dataset...'.format(args.eval_dataset))
-save_path = './eval/' + args.eval_dataset + '/'
+save_path = './output/eval/' + args.eval_dataset + '/'
 if not os.path.exists(save_path):
     os.makedirs(save_path)
 
@@ -60,25 +60,25 @@ with torch.no_grad():
     l1_losses = []
             
     # Measure psrn and ssim on entire val set
-    for i, (real_inputs, real_targets, masks, text_masks, edges, names) in enumerate(loader):
-        real_inputs, real_targets, masks, text_masks, edges = real_inputs.to(device), real_targets.to(device), masks.to(device), text_masks.to(device), edges.to(device)
+    for i, (inputs, targets, masks, text_masks, edges, names) in enumerate(loader):
+        inputs, targets, masks, text_masks, edges = inputs.to(device), targets.to(device), masks.to(device), text_masks.to(device), edges.to(device)
             
         # Pass images through generator
-        if args.generator == 'unet':
-            outputs = netG(torch.cat((real_inputs, text_masks, edges), 1), masks)
+        if args.generator == 'unet':           
+            outputs = netG(torch.cat((inputs, text_masks, edges), 1), text_masks)
         else:
-            outputs = netG(torch.cat((real_inputs, text_masks, edges), 1))
+            outputs = netG(torch.cat((inputs, text_masks, edges), 1))
 
         # Get SSIM
-        ssim_losses.append(ssim(outputs.detach(), real_targets).item())
+        ssim_losses.append(ssim(outputs.detach(), targets).item())
 
         # Get PSRN 
-        mse = criterionMSE(outputs, real_targets)
+        mse = criterionMSE(outputs, targets)
         psnr = 10 * np.log10(1 / mse.item())
         psrn_losses.append(psnr)
 
         # Get L1 loss
-        l1 = criterionL1(outputs, real_targets) / torch.mean(masks)
+        l1 = criterionL1(outputs, targets) / torch.mean(masks)
         l1_losses.append(l1.detach().item())
 
         # Save images
