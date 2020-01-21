@@ -379,42 +379,35 @@ class PatchDiscriminator(nn.Module):
     def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, use_spectral_norm=False, use_attention=False):
         super(PatchDiscriminator, self).__init__()
         self.use_attention = use_attention
-        model_start = [spectral_norm(nn.Conv2d(input_nc, ndf, kernel_size=4, stride=2, padding=1, bias= not use_spectral_norm), use_spectral_norm),
+        model = [spectral_norm(nn.Conv2d(input_nc, ndf, kernel_size=4, stride=2, padding=1, bias= not use_spectral_norm), use_spectral_norm),
                        nn.LeakyReLU(0.2, True),
                        spectral_norm(nn.Conv2d(ndf, ndf*2, kernel_size=4, stride=2, padding=1, bias= not use_spectral_norm), use_spectral_norm),
                        nn.LeakyReLU(0.2, True),]
-        self.model_start = nn.Sequential(*model_start)
 
         # Add LSTA attention
-        if self.use_attention:
-            self.attention = LSTA(ndf*2, norm_layer=None)
+        #if self.use_attention:
+        #    self.attention = LSTA(ndf*2, norm_layer=None)
 
-        model_end = []
         nf_mult = 2
         nf_mult_prev = 1
         for i in range(2, n_layers):
             nf_mult_prev = nf_mult
             nf_mult = min(2**i, 8)
-            model_end += [spectral_norm(nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
+            model += [spectral_norm(nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
                           norm_layer(ndf * nf_mult),
                           nn.LeakyReLU(0.2, True)]
 
         # Add stride=1 layer
         nf_mult_prev = nf_mult
         nf_mult = min(2**n_layers, 8)
-        model_end += [spectral_norm(nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm),
+        model += [spectral_norm(nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm),
                       norm_layer(ndf * nf_mult),
                       nn.LeakyReLU(0.2, True)]
 
-        model_end += [spectral_norm(nn.Conv2d(ndf * nf_mult, 1, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm)]
-        self.model_end = nn.Sequential(*model_end)
-        self.model = nn.Sequential(*(model_start+model_end))
+        model += [spectral_norm(nn.Conv2d(ndf * nf_mult, 1, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm)]
+        self.model = nn.Sequential(*model)
 
     def forward(self, inp):
-        #out = self.model_start(inp)
-        #if self.use_attention:
-        #    out = self.attention(out, None)
-        #out = self.model_end(out)
         out = self.model(inp)
         return out
 
