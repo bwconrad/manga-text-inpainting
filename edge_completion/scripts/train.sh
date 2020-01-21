@@ -11,8 +11,8 @@ python main.py \
 --lambda_tversky 10 \
 --alpha_tversky 0.5 \
 --beta_tversky 0.5 \
---width 256 \
---height 512 \
+--width 512 \
+--height 1024 \
 --lrG 0.0001 \
 --lrD 0.00001 \
 --beta1 0 \
@@ -22,5 +22,5 @@ python main.py \
 --spectral_norm_g \
 --ngf 32 \
 --ndf 32 \
---resume ./results/text_mask_tversky/checkpoints/checkpoint_epoch19.pth.tar
+--resume ./results/text_mask_tversky/512x/checkpoints/checkpoint_epoch48.pth.tar
 

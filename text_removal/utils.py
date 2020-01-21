@@ -105,7 +105,7 @@ def get_args():
     parser.add_argument('--resume', default=None, help='checkpoint to resume training from')
 
     # Model arguments
-    parser.add_argument('--generator', required=True, help='regular | unet')
+    parser.add_argument('--generator', required=True, help='regular | unet | lsta')
     parser.add_argument('--discriminator', required=True, help='pixel | patch | multi')
     parser.add_argument('--width', type=int, default=512, help='width of input')
     parser.add_argument('--height', type=int, default=1024, help='height of input') 
@@ -199,6 +199,9 @@ def get_generator(args):
                        use_dropout=args.dropout, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation, kernel_size=args.kernel_size_g)
     elif args.generator == 'unet':
         return UNetGenerator(input_nc=2 if not args.edges else 3, output_nc=1, n_downsampling=args.n_downsamples_g, n_blocks=args.n_blocks_g, ngf=args.ngf, norm_layer=norm_layer,
+                       use_dropout=args.dropout, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation, kernel_size=args.kernel_size_g)
+    elif args.generator == 'lsta':
+        return LSTAUNetGenerator(input_nc=2 if not args.edges else 3, output_nc=1, n_downsampling=args.n_downsamples_g, n_blocks=args.n_blocks_g, ngf=args.ngf, norm_layer=norm_layer,
                        use_dropout=args.dropout, use_spectral_norm=args.spectral_norm_g, dilation=args.dilation, kernel_size=args.kernel_size_g)
     else:
         raise NotImplementedError('generator [{}] is not implemented'.format(args.generator))

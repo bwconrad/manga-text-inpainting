@@ -144,7 +144,7 @@ def train_gan(netG, netD, train_loader, val_loader, optimizerG, optimizerD,
 
 
         # Save training history plot
-        #save_plots(train_hist, args.plot_path)
+        save_plots(train_hist, args.plot_path)
 
         # Update lr schedulers
         if schedulerG:

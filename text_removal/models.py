@@ -190,8 +190,102 @@ class GlobalGenerator(nn.Module):
             
     def forward(self, input):
         return self.model(input) 
-    
+  
 class UNetGenerator(nn.Module):
+    def __init__(self, input_nc, output_nc, ngf=64, n_blocks=7, norm_layer=nn.InstanceNorm2d, n_downsampling=2,
+                 use_dropout=False, use_spectral_norm=False, dilation=1, kernel_size=3):
+        super(UNetGenerator, self).__init__()
+        activation = nn.ReLU(True)   
+
+        self.encoder1 = nn.Sequential(
+            nn.ReflectionPad2d(3),
+            nn.Conv2d(in_channels=input_nc, out_channels=ngf, kernel_size=7, padding=0),
+            nn.InstanceNorm2d(ngf, track_running_stats=False),
+            activation
+        )
+
+        self.encoder2 = nn.Sequential(
+            nn.Conv2d(in_channels=ngf, out_channels=ngf*2, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(ngf*2, track_running_stats=False),
+            activation,
+        )
+
+        self.encoder3 = nn.Sequential(
+            nn.Conv2d(in_channels=ngf*2, out_channels=ngf*4, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(ngf*4, track_running_stats=False),
+            activation
+        )
+
+        self.fusion1 = nn.Sequential(
+            nn.Conv2d(in_channels=ngf*8,out_channels=ngf*4,kernel_size=1),
+            nn.InstanceNorm2d(ngf*4,track_running_stats=False),
+            activation
+        )
+
+        self.fusion2 = nn.Sequential(
+            nn.Conv2d(in_channels=ngf*4,out_channels=ngf*2,kernel_size=1),
+            nn.InstanceNorm2d(ngf*2,track_running_stats=False),
+            activation
+        )
+
+        self.fusion3 = nn.Sequential(
+            nn.Conv2d(in_channels=ngf*2,out_channels=ngf,kernel_size=1),
+            nn.InstanceNorm2d(ngf,track_running_stats=False),
+            activation
+        )
+        
+
+        self.decoder1 = nn.Sequential(
+            nn.ConvTranspose2d(in_channels=ngf*4, out_channels=ngf*2, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(ngf*2, track_running_stats=False),
+            activation,
+        )
+
+        self.decoder2 = nn.Sequential(
+            nn.ConvTranspose2d(in_channels=ngf*2, out_channels=ngf, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(ngf, track_running_stats=False),
+            activation,
+        )
+
+        self.decoder3 = nn.Sequential(
+            nn.ReflectionPad2d(3),
+            nn.Conv2d(in_channels=ngf, out_channels=1, kernel_size=7, padding=0),
+            nn.Tanh()
+        )
+
+        blocks = []
+        for _ in range(n_blocks):
+            block = ResnetBlock(ngf*4, padding_type='reflect', activation=activation, norm_layer=norm_layer,
+                                  use_dropout=use_dropout, use_spectral_norm = use_spectral_norm, dilation=dilation)
+            blocks.append(block)
+
+        self.middle = nn.Sequential(*blocks)
+
+    def downsample_mask(self, mask, degree):
+        return F.interpolate(mask, size=[int(mask.shape[2] / degree), int(mask.shape[3] / degree)],
+                                     mode='nearest')
+
+    def forward(self, input, mask):
+        e1 = self.encoder1(input)
+        e2 = self.encoder2(e1)
+        e3 = self.encoder3(e2)
+        
+        output = self.middle(e3)
+
+        quarter_mask = self.downsample_mask(mask, 4)
+        output = self.fusion1(torch.cat((e3*(1-quarter_mask), output), dim=1))
+        output = self.decoder1(output)
+
+        half_mask = self.downsample_mask(mask, 2)
+        output = self.fusion2(torch.cat((e2*(1-half_mask), output), dim=1))
+        output = self.decoder2(output)
+
+        output = self.fusion3(torch.cat((e1*(1-mask), output), dim=1))
+        output = self.decoder3(output)
+
+        return output
+  
+class LSTAUNetGenerator(nn.Module):
     def __init__(self, input_nc, output_nc, ngf=64, n_blocks=7, norm_layer=nn.InstanceNorm2d, n_downsampling=2,
                  use_dropout=False, use_spectral_norm=False, dilation=1, kernel_size=3):
         super(UNetGenerator, self).__init__()

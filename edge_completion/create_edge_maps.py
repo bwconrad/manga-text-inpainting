@@ -36,7 +36,7 @@ resume_args = checkpoint['args']
 netG.load_state_dict(checkpoint['G_state_dict'])
 print("Loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
 
-for i, (dataset, loader) in enumerate([('test', test_loader), ]):
+for i, (dataset, loader) in enumerate([('val', val_loader), ('test', test_loader), ('train', train_loader)  ]):
     print('Evaluating on {} dataset...'.format(dataset))
     save_path = './output/eval/' + dataset + '/'
     if not os.path.exists(save_path):
