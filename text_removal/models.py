@@ -284,7 +284,7 @@ class UNetGenerator(nn.Module):
         output = self.decoder3(output)
 
         return output
-  
+
 class LSTAUNetGenerator(nn.Module):
     def __init__(self, input_nc, output_nc, ngf=64, n_blocks=7, norm_layer=nn.InstanceNorm2d, n_downsampling=2,
                  use_dropout=False, use_spectral_norm=False, dilation=1, kernel_size=3):
@@ -408,12 +408,14 @@ class PatchDiscriminator(nn.Module):
 
         model_end += [spectral_norm(nn.Conv2d(ndf * nf_mult, 1, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm)]
         self.model_end = nn.Sequential(*model_end)
+        self.model = nn.Sequential(*(model_start+model_end))
 
     def forward(self, inp):
-        out = self.model_start(inp)
-        if self.use_attention:
-            out = self.attention(out, None)
-        out = self.model_end(out)
+        #out = self.model_start(inp)
+        #if self.use_attention:
+        #    out = self.attention(out, None)
+        #out = self.model_end(out)
+        out = self.model(inp)
         return out
 
 class PixelDiscriminator(nn.Module):
