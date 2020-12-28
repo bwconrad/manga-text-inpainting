@@ -4,3 +4,7 @@ g.py
 *.jpg
 *.zip
 *.tar
+*.txt
+lightning/output/
+lightning/data/
+old/
