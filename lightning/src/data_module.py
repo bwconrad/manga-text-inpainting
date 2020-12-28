@@ -68,7 +68,7 @@ class MaskRefineDataset(data.Dataset):
 
         # Load annotation
         print(f'Loading Annotations from {ann_path}')
-        ann = pd.read_csv(os.path.join(data_root, ann_path))
+        ann = pd.read_csv(ann_path)
 
         # Get image paths and bounding boxes
         self.imgs = ann['file_name'].tolist()

@@ -18,13 +18,13 @@ class MREncoderDecoder(nn.Module):
             nn.ReLU(True),
 
             spectral_norm(nn.Conv2d(in_channels=nf*2, out_channels=nf*4, kernel_size=4, stride=2, padding=1), use_spectral_norm),
-            nn.InstanceNorm2d(256, track_running_stats=False),
+            nn.BatchNorm2d(nf*4, track_running_stats=False),
             nn.ReLU(True)
         )
 
         blocks = []
         for _ in range(residual_blocks):
-            block = ResnetBlockBatch(nf*4, dilation=dilation, use_spectral_norm=use_spectral_norm)
+            block = PreActResnetBlockBatch(nf*4, dilation=dilation, use_spectral_norm=use_spectral_norm)
             blocks.append(block)
 
         self.middle = nn.Sequential(*blocks)

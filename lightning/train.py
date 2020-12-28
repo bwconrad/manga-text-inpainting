@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger, CSVLogger
 import os
 from pathlib import Path
@@ -30,10 +30,16 @@ csv_logger = CSVLogger(
 checkpoint_callback = ModelCheckpoint(
     filepath=os.path.join(tb_logger.root_dir, 'best-{epoch}-{val_f1:.4f}'),
     save_top_k=1,
-    verbose=True,
+    verbose=False,
     monitor='val_f1',
     mode='max',
     save_last=True,
+)
+early_stop_callback = EarlyStopping(
+   monitor='val_f1',
+   mode='max',
+   patience=hparams.early_stop_patience,
+   verbose=True
 )
 
 # Load datamodule
@@ -46,6 +52,7 @@ model = MaskRefineModel(hparams)
 trainer = pl.Trainer.from_argparse_args(
     args,
     checkpoint_callback=checkpoint_callback,
+    callbacks=[early_stop_callback],
     logger=[tb_logger, csv_logger],
 )
 

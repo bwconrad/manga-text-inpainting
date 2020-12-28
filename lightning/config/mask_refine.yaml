@@ -1,26 +1,19 @@
-mode: mask_refine # masked_refine 
-
-data_path: ../data/
+mode: mask_refine 
+data_path: data/
 output_path: output/mask_refine
 experiment_name: test
-
-height: 512
-width: 512
-
+height: 256
+width: 256
 tversky_alpha: 0.2
 tversky_beta: 0.8
-
 arch: encoder_decoder
 nf: 32
 n_blocks: 4
-
 lr: 0.001
-batch_size: 16
-epochs: 10
-beta1: 0
-beta2: 0.9
-workers: 6
+batch_size: 64
+schedule: plateau 
+plateau_patience: 4
+plateau_factor: 0.1
+plateau_n: 1  
+early_stop_patience: 8
 
-schedule: none # none | step | cosine
-steps: [10]
-step_size: 0.1

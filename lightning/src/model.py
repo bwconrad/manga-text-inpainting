@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision.utils import make_grid
 import pytorch_lightning as pl 
-from pytorch_lightning.metrics.classification import Precision, Recall, F1
+from pytorch_lightning.metrics.classification import Precision, Recall
 import numpy as np
 from collections import OrderedDict
 
@@ -41,7 +41,7 @@ class MaskRefineModel(pl.LightningModule):
         self.log('train_prec', precision)
         self.log('train_rec', recall)
         self.log('train_f1', (2*precision*recall)/(precision+recall))
-        self.log('lr', self.optimizer.param_groups[0]['lr'], prog_bar=True)
+        self.log('lr', self.trainer.optimizers[0].param_groups[0]['lr'], prog_bar=True)
 
         return loss
 
@@ -59,16 +59,14 @@ class MaskRefineModel(pl.LightningModule):
         self.log('val_prec', precision, on_epoch=True)
         self.log('val_rec', recall, on_epoch=True)
         self.log('val_f1', (2*precision*recall)/(precision+recall), on_epoch=True)
-
-        # Save some samples for visualization
         
         return OrderedDict({
-                'val_loss': loss,
-                'val_prec': precision,
-                'val_rec': recall,
-                'val_sample': torch.stack([img[0], target[0], pred[0]]) \
-                    if batch_idx%(500//self.hparams.batch_size) == 0 else None
-            })
+            'val_loss': loss,
+            'val_prec': precision,
+            'val_rec': recall,
+            'val_sample': torch.stack([img[0], target[0], pred[0]]) \
+                if batch_idx%(250//self.hparams.batch_size) == 0 else None # Save some samples for visualization
+        })
 
     def validation_epoch_end(self, outputs):
         # Visualize validation samples
@@ -77,18 +75,23 @@ class MaskRefineModel(pl.LightningModule):
         
         # Log to tensorboard
         tensorboard = self.logger.experiment[0]
-        tensorboard.add_image('val_samples', grid)
+        tensorboard.add_image('val_samples', grid, self.current_epoch)
 
         # Print validation results
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         avg_prec = torch.stack([x['val_prec'] for x in outputs]).mean()
         avg_rec = torch.stack([x['val_rec'] for x in outputs]).mean()
-        print(f'Val Loss: {avg_loss:.5f} Val Precision: {avg_prec:.4f} Val Recall: {avg_rec:.4f}')
+        avg_f1 = (2*avg_prec*avg_rec)/(avg_prec+avg_rec) 
+        print(f'\nVal Loss: {avg_loss:.5f} Val Precision: {avg_prec:.4f}',
+                f'Val Recall: {avg_rec:.4f} Val F1 {avg_f1:.4f}')
 
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr, 
                                betas=(self.hparams.beta1, self.hparams.beta2))
-        self.optimizer = optimizer # Make the optimizer availble to access current lr
-        scheduler = get_scheduler(optimizer, self.hparams)
-        return [optimizer], [scheduler]
+        if self.hparams.schedule != 'none':
+            scheduler = get_scheduler(optimizer, self.hparams)
+            return [optimizer], [scheduler]
+        else:
+            print(f'Using no LR schedule lr={self.hparams.lr}')
+            return [optimizer]
