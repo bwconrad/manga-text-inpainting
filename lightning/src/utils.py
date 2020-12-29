@@ -4,11 +4,11 @@ import yaml
 from argparse import Namespace
 from torch.optim import lr_scheduler
 
-def get_scheduler(optimizer, hparams):
+def get_scheduler(optimizer, lr, hparams):
     name = hparams.schedule
 
     if name == 'cosine':
-        print(f'Using Cosine LR schedule lr={hparams.lr}')
+        print(f'Using Cosine LR schedule lr={lr}')
         return {
             'scheduler': lr_scheduler.CosineAnnealingLR(
                 optimizer,
@@ -16,7 +16,7 @@ def get_scheduler(optimizer, hparams):
             ),
         }
     elif name == 'step':
-        print(f'Using Step LR schedule with lr={hparams.lr} steps={hparams.steps} step_size={hparams.step_size}')
+        print(f'Using Step LR schedule with lr={lr} steps={hparams.steps} step_size={hparams.step_size}')
         return {
             'scheduler': lr_scheduler.MultiStepLR(
                     optimizer,
@@ -25,7 +25,7 @@ def get_scheduler(optimizer, hparams):
             ),
         }
     elif name == 'plateau':
-        print(f'Using Plateau LR schedule with lr={hparams.lr} factor={hparams.plateau_factor}',
+        print(f'Using Plateau LR schedule with lr={lr} factor={hparams.plateau_factor}',
               f'patience={hparams.plateau_patience} # reduces={hparams.plateau_n}')
         scheduler = lr_scheduler.ReduceLROnPlateau(
             optimizer,
@@ -33,7 +33,7 @@ def get_scheduler(optimizer, hparams):
             factor=hparams.plateau_factor,
             verbose=True,
             mode='max',
-            min_lr=hparams.lr*hparams.plateau_factor**hparams.plateau_n # Allow up to plateau_n reduces
+            min_lr=lr*hparams.plateau_factor**hparams.plateau_n # Allow up to plateau_n reduces
         )
         return {
            'scheduler': scheduler,
@@ -65,6 +65,7 @@ def hparams_from_config(config_path):
 
 default_hparams = {
     'mode': 'mask_refine',      # masked_refine 
+    'weights': '',
     'experiment_name': 'test',
     'data_path': 'data/',
     'output_path': 'output',
@@ -83,11 +84,11 @@ default_hparams = {
     'beta1': 0,
     'beta2': 0.9,
     'workers': 6,
-    'schedule': 'none',           # none | step | cosine | plateau
+    'schedule': 'none',         # none | step | cosine | plateau
     'steps': [],                # Reduction epochs for step schedule
     'step_size': 0.1,           # Reduction factor for step schedule
     'plateau_patience': 4,      # Patience for plateau schedule
     'plateau_factor': 0.1,      # Reduction factor for plateau schedule     
     'plateau_n': 2,             # Number of reductions for plateau schedule
-    'early_stop_patience': 9,   # Patience for early stopping ()
+    'early_stop_patience': 10,  # Patience for early stopping ()
 }

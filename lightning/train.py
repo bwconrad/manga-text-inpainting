@@ -1,3 +1,4 @@
+import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger, CSVLogger
@@ -47,6 +48,9 @@ dm = MaskRefineDataModule(hparams)
 
 # Load model
 model = MaskRefineModel(hparams)
+if hparams.weights:
+    print(f'Loading mask refine network weights from {hparams.weights}')
+    model = model.load_from_checkpoint(hparams.weights, hparams=hparams)
 
 # Run trainer
 trainer = pl.Trainer.from_argparse_args(
@@ -56,4 +60,5 @@ trainer = pl.Trainer.from_argparse_args(
     logger=[tb_logger, csv_logger],
 )
 
+trainer.tune(model, datamodule=dm)
 trainer.fit(model, dm)

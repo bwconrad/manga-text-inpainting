@@ -16,9 +16,17 @@ from .utils import get_scheduler
 class MaskRefineModel(pl.LightningModule):
     def __init__(self, hparams):
         super(MaskRefineModel, self).__init__()
+        self.save_hyperparameters()
+
+        # Hyperparameters
         self.hparams = hparams
+        self.lr = hparams.lr
+        
+        # Modules
         self.net = load_network(hparams)
         self.criterion = TverskyLoss(hparams.tversky_alpha, hparams.tversky_beta)
+        
+        # Metrics
         self.train_precision = Precision()
         self.train_recall = Recall()
         self.val_precision = Precision()
@@ -37,6 +45,7 @@ class MaskRefineModel(pl.LightningModule):
         loss = self.criterion(pred, target)
         precision = self.train_precision(pred, target)
         recall = self.train_recall(pred, target)
+        
         self.log('train_loss', loss)
         self.log('train_prec', precision)
         self.log('train_rec', recall)
@@ -87,11 +96,11 @@ class MaskRefineModel(pl.LightningModule):
 
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr, 
+        optimizer = optim.Adam(self.parameters(), lr=self.lr, 
                                betas=(self.hparams.beta1, self.hparams.beta2))
         if self.hparams.schedule != 'none':
-            scheduler = get_scheduler(optimizer, self.hparams)
+            scheduler = get_scheduler(optimizer, self.lr, self.hparams)
             return [optimizer], [scheduler]
         else:
-            print(f'Using no LR schedule lr={self.hparams.lr}')
+            print(f'Using no LR schedule lr={self.lr}')
             return [optimizer]
