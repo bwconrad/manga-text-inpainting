@@ -45,7 +45,7 @@ class MaskRefineModel(pl.LightningModule):
         loss = self.criterion(pred, target)
         precision = self.train_precision(pred, target)
         recall = self.train_recall(pred, target)
-        
+
         self.log('train_loss', loss)
         self.log('train_prec', precision)
         self.log('train_rec', recall)
@@ -64,6 +64,7 @@ class MaskRefineModel(pl.LightningModule):
         loss = self.criterion(pred, target)
         precision = self.val_precision(pred, target)
         recall = self.val_recall(pred, target)
+        
         self.log('val_loss', loss)
         self.log('val_prec', precision, on_epoch=True)
         self.log('val_rec', recall, on_epoch=True)

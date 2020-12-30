@@ -5,9 +5,12 @@ def load_network(hparams):
         if hparams.arch == 'encoder_decoder':
             net = MREncoderDecoder(nf=hparams.nf, residual_blocks=hparams.n_blocks)
             init_weights(net, hparams.weight_init, hparams.weight_gain)
-            return net
+        elif hparams.arch == 'u2net':
+            net = U2Net()
     else:
         raise NotImplementedError('')
+
+    return net
 
 def init_weights(net, init_type='kaiming', gain=0.02):
         '''

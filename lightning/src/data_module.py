@@ -22,16 +22,16 @@ class MaskRefineDataModule(pl.LightningDataModule):
         if stage == 'fit':
             self.train_dataset = MaskRefineDataset(
                 self.hparams.data_path, mode='train',
-                height=self.hparams.height, width=self.hparams.width
+                size=self.hparams.size
             )
             self.val_dataset = MaskRefineDataset(
                 self.hparams.data_path, mode='val',
-                height=self.hparams.height, width=self.hparams.width
+                size=self.hparams.size
             )
         elif stage == 'test':
             self.test_dataset = MaskRefineDataset(
                 self.hparams.data_path, mode='test',
-                height=self.hparams.height, width=self.hparams.width
+                size=self.hparams.size
             )
 
     def train_dataloader(self):
@@ -47,12 +47,11 @@ class MaskRefineDataModule(pl.LightningDataModule):
                           shuffle=False, num_workers=self.hparams.workers, pin_memory=True)
 
 class MaskRefineDataset(data.Dataset): 
-    def __init__(self, data_root, mode='train', height=256, width=256):
+    def __init__(self, data_root, mode='train', size=256):
         super(MaskRefineDataset, self).__init__()
 
         self.mode = mode
-        self.height = height
-        self.width = width
+        self.size = size
         self.loader = default_loader
 
         # Set paths
@@ -78,8 +77,8 @@ class MaskRefineDataset(data.Dataset):
         # Tranformations
         self.tensor = transforms.ToTensor()
         self.norm = transforms.Normalize(mean=0.5, std=0.5)
-        self.resize = transforms.Resize(min([height, width]))
-        self.mask_resize = transforms.Resize(min([height, width]), interpolation=0) # NN resize
+        self.resize = transforms.Resize(size)
+        self.mask_resize = transforms.Resize(size, interpolation=0) # NN resize
 
 
     def create_box_mask(self, bboxes, w, h, transform=False):
@@ -116,10 +115,10 @@ class MaskRefineDataset(data.Dataset):
             mask_target = self.mask_resize(mask_target)
             if self.mode == 'train':
                 [img, mask_box, mask_target] = random_crop_all([img, mask_box, mask_target], 
-                                                               self.height, self.width)
+                                                               self.size)
             elif self.mode == 'val':
                 [img, mask_box, mask_target] = center_crop_all([img, mask_box, mask_target], 
-                                                               self.height, self.width)
+                                                               self.size)
         img = self.norm(self.tensor(img))
         mask_box = self.tensor(mask_box)
         mask_target = self.tensor(mask_target).round() # Loaded image is not binary
@@ -130,9 +129,9 @@ class MaskRefineDataset(data.Dataset):
         return len(self.imgs)
 
 
-def random_crop_all(imgs, h, w):
+def random_crop_all(imgs, size):
     i, j, h, w = transforms.RandomCrop.get_params(
-            imgs[0], output_size=(h, w))
+            imgs[0], output_size=(size, size))
     
     imgs_cropped = [] 
     for img in imgs:
@@ -140,10 +139,10 @@ def random_crop_all(imgs, h, w):
 
     return imgs_cropped
 
-def center_crop_all(imgs, height, width):
+def center_crop_all(imgs, size):
     imgs_cropped = [] 
     for img in imgs:
-        imgs_cropped.append(TF.center_crop(img, (height, width)))
+        imgs_cropped.append(TF.center_crop(img, size))
 
     return imgs_cropped
 

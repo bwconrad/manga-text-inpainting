@@ -26,7 +26,7 @@ def get_scheduler(optimizer, lr, hparams):
         }
     elif name == 'plateau':
         print(f'Using Plateau LR schedule with lr={lr} factor={hparams.plateau_factor}',
-              f'patience={hparams.plateau_patience} # reduces={hparams.plateau_n}')
+              f'patience={hparams.plateau_patience} #reduces={hparams.plateau_n}')
         scheduler = lr_scheduler.ReduceLROnPlateau(
             optimizer,
             patience=hparams.plateau_patience,
@@ -69,11 +69,10 @@ default_hparams = {
     'experiment_name': 'test',
     'data_path': 'data/',
     'output_path': 'output',
-    'height': 256,
-    'width': 256,
+    'size': 256,
     'tversky_alpha': 0.2,       # For mask_refine training
     'tversky_beta': 0.8,        # For mask_refine training
-    'arch': 'encoder_decoder',  # Network architecture
+    'arch': 'encoder_decoder',  # encoder_decoder | u2net
     'nf': 32,                   # Number of features channels
     'weight_init': 'kaiming',   # normal | xavier | kaiming | orthogonal
     'weight_gain': 0.02,        # Std for normal, xavier and orthogonal weight init
